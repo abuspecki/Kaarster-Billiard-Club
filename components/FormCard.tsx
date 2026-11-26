@@ -2,7 +2,7 @@
 
 import { useActionState } from 'react';
 import type { FormState } from '@/app/actions/auth';
-import { Button, ErrorText, Input } from './ui';
+import { Button, ErrorText, InfoText, Input } from './ui';
 
 /** Ein-Feld-Formular (Name oder Code) mit Fehleranzeige. */
 export function SingleFieldForm({
@@ -43,7 +43,7 @@ export function SingleFieldForm({
         </Button>
       </div>
       <ErrorText>{state.error}</ErrorText>
-      {state.info && <p className="text-sm text-emerald-700">{state.info}</p>}
+      <InfoText>{state.info}</InfoText>
     </form>
   );
 }

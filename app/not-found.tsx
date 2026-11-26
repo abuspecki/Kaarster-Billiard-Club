@@ -1,14 +1,25 @@
 import Link from 'next/link';
-import { Card } from '@/components/ui';
+import { AppBar } from '@/components/sport/AppBar';
+import { EmptyState } from '@/components/sport/EmptyState';
+import { SectionCard } from '@/components/sport/SectionCard';
 
 export default function NotFound() {
   return (
-    <Card className="mt-6 space-y-3 text-center">
-      <h1 className="text-xl font-bold">Nicht gefunden</h1>
-      <p className="text-stone-600">Diese Seite gibt es nicht – oder du bist (noch) nicht Mitglied dieser Gruppe.</p>
-      <Link href="/" className="font-semibold text-emerald-700">
-        Zur Startseite
-      </Link>
-    </Card>
+    <>
+      <AppBar title="Billiard-Tracker" initials="BT" />
+      <div className="p-4">
+        <SectionCard>
+          <EmptyState
+            title="Nicht gefunden"
+            text="Diese Seite gibt es nicht – oder du bist (noch) nicht Mitglied dieser Gruppe."
+            action={
+              <Link href="/" className="font-bold text-accent-text">
+                Zur Startseite ›
+              </Link>
+            }
+          />
+        </SectionCard>
+      </div>
+    </>
   );
 }

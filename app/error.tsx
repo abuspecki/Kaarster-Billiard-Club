@@ -1,19 +1,31 @@
 'use client';
 
 import Link from 'next/link';
-import { Button, Card } from '@/components/ui';
+import { AppBar } from '@/components/sport/AppBar';
+import { EmptyState } from '@/components/sport/EmptyState';
+import { SectionCard } from '@/components/sport/SectionCard';
+import { Button } from '@/components/ui';
 
 export default function Error({ reset }: { error: Error; reset: () => void }) {
   return (
-    <Card className="mt-6 space-y-3 text-center">
-      <h1 className="text-xl font-bold">Da ist etwas schiefgelaufen 😕</h1>
-      <p className="text-stone-600">Bitte versuch es noch einmal. Wenn das öfter passiert, prüf deine Internetverbindung.</p>
-      <div className="flex justify-center gap-2">
-        <Button onClick={reset}>Nochmal versuchen</Button>
-        <Link href="/" className="rounded-xl px-4 py-3 font-semibold text-emerald-700">
-          Startseite
-        </Link>
+    <>
+      <AppBar title="Billiard-Tracker" initials="BT" />
+      <div className="p-4">
+        <SectionCard>
+          <EmptyState
+            title="Da ist etwas schiefgelaufen"
+            text="Bitte versuch es noch einmal. Wenn das öfter passiert, prüf deine Internetverbindung."
+            action={
+              <div className="flex justify-center gap-2">
+                <Button onClick={reset}>Nochmal versuchen</Button>
+                <Link href="/" className="rounded-lg px-4 py-3 font-bold text-accent-text">
+                  Startseite
+                </Link>
+              </div>
+            }
+          />
+        </SectionCard>
       </div>
-    </Card>
+    </>
   );
 }
