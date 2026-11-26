@@ -1,6 +1,6 @@
 # Billiard-Tracker – Design
 
-Stand: 2026-11-26 · Status: Entwurf, wartet auf Freigabe
+Stand: 2026-11-26 · Status: wartet auf Freigabe
 
 ## 1. Absicht und Warum
 
@@ -68,14 +68,19 @@ Der Nutzer hat die Technik an Claude übergeben („Sag du“); A ist Claudes Wa
 
 ### Sitzungen
 - Gehören immer zu einer Gruppe. Jedes Gruppenmitglied kann eine Sitzung starten.
-- Beitritt über kurzen Code (z. B. 6 Zeichen) oder Link.
+- Beitritt über kurzen Code (z. B. 6 Zeichen) oder Link. Wer mit Konto beitritt und noch nicht
+  in der Gruppe ist, wird automatisch Gruppenmitglied. *(Claudes Entscheidung: einfachster Weg;
+  Fremde kommen nur mit dem Code hinein.)*
 - Teilnehmer: Konten und Gäste (nur Name). Gästepartien zählen in der Sitzung und deren
   Zusammenfassung, aber **nicht** in Gruppen-Rangliste/Statistiken.
 - Sitzung kann beendet werden (Ersteller oder Gruppen-Admin) → Abend-Zusammenfassung.
   Beendete Sitzungen bleiben einsehbar.
 
 ### Partien
-- Eintragen: Gegner auswählen, Gewinner antippen. Gespeichert wird, wer eingetragen hat und wann.
+- Einzel (1 gegen 1) oder Doppel (2 gegen 2) – auch außerhalb von Turnieren. *(Nutzer: ja)*
+- Eintragen: Einzel ist Standard (Gegner auswählen → Gewinner antippen). Ein Umschalter
+  „Doppel“ fügt je einen Partner hinzu – höchstens ein Tipp mehr pro Seite.
+- Gespeichert wird, wer eingetragen hat und wann.
 - Jeder Sitzungsteilnehmer mit Konto kann eine Partie der laufenden Sitzung korrigieren oder
   löschen (unter Freunden einfacher als Rechteverwaltung; „eingetragen von“ bleibt sichtbar).
 
@@ -89,6 +94,10 @@ Der Nutzer hat die Technik an Claude übergeben („Sag du“); A ist Claudes Wa
 - Ein Turnier pro Sitzung zur gleichen Zeit; normale Partien sind daneben weiter möglich.
 
 ### Statistik und Rangliste (pro Gruppe)
+- **Team-/Doppelsiege zählen für jedes Teammitglied als Sieg** (ebenso Niederlagen), auch
+  im Turnier. *(Nutzer: ja)* Im Spielerprofil werden Einzel und Team getrennt ausgewiesen;
+  die Rangliste nutzt die Summe.
+- Direktvergleich bezieht sich auf Partien, in denen beide auf **gegnerischen** Seiten standen.
 - Rangliste sortiert nach Siegen; Gleichstand → höhere Siegquote → weniger Partien.
 - Spielerprofil in der Gruppe: Siege, Niederlagen, Siegquote, Partien, Direktvergleich mit
   jedem anderen Mitglied.
