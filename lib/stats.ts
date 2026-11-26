@@ -77,3 +77,13 @@ export function longestStreak(
   }
   return best;
 }
+
+/** Ergebnisse der letzten n Partien eines Spielers, älteste zuerst. */
+export function recentForm(matches: MatchRecord[], player: PlayerKey, n = 5): ('W' | 'L')[] {
+  const form: ('W' | 'L')[] = [];
+  for (const match of byTime(matches)) {
+    const side = match.sideA.includes(player) ? 'A' : match.sideB.includes(player) ? 'B' : null;
+    if (side) form.push(match.winner === side ? 'W' : 'L');
+  }
+  return form.slice(-n);
+}

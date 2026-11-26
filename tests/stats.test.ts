@@ -73,3 +73,32 @@ describe('longestStreak', () => {
     expect(longestStreak([])).toBeNull();
   });
 });
+
+describe('recentForm', () => {
+  const seq = (results: ('W' | 'L')[]) =>
+    results.map((r, i) => ({
+      id: `f${i}`,
+      playedAt: new Date(Date.UTC(2026, 5, 1, 0, i)).toISOString(),
+      sideA: ['u:p'],
+      sideB: ['u:o'],
+      winner: (r === 'W' ? 'A' : 'B') as 'A' | 'B',
+    }));
+
+  it('returns the last 5 results, oldest first', async () => {
+    const { recentForm } = await import('@/lib/stats');
+    expect(recentForm(seq(['W', 'W', 'L', 'W', 'L', 'W']), 'u:p')).toEqual(['W', 'L', 'W', 'L', 'W']);
+  });
+
+  it('returns fewer when fewer matches were played', async () => {
+    const { recentForm } = await import('@/lib/stats');
+    expect(recentForm(seq(['L', 'W']), 'u:p')).toEqual(['L', 'W']);
+    expect(recentForm(seq(['L', 'W']), 'u:nobody')).toEqual([]);
+  });
+
+  it('ignores input order and respects n', async () => {
+    const { recentForm } = await import('@/lib/stats');
+    const ms = seq(['W', 'L', 'L']);
+    expect(recentForm([...ms].reverse(), 'u:p', 2)).toEqual(['L', 'L']);
+    expect(recentForm(ms, 'u:o')).toEqual(['L', 'W', 'W']);
+  });
+});
