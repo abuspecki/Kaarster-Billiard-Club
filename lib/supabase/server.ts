@@ -23,8 +23,9 @@ export async function getUser(): Promise<{ id: string; displayName: string } | n
   const sb = await createServerSupabase();
   const { data } = await sb.auth.getUser();
   if (!data.user) return null;
-  const { data: profile } = await sb.from('profiles').select('display_name').eq('id', data.user.id).single();
-  return { id: data.user.id, displayName: profile?.display_name ?? 'Spieler' };
+  // Name kommt aus den Konto-Daten (bei der Registrierung gesetzt) – spart eine Datenbank-Anfrage pro Seite.
+  const meta = data.user.user_metadata as { display_name?: string } | undefined;
+  return { id: data.user.id, displayName: meta?.display_name?.trim() || 'Spieler' };
 }
 
 export async function requireUser(): Promise<{ id: string; displayName: string }> {

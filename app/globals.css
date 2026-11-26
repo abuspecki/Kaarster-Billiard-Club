@@ -95,3 +95,11 @@ body {
 .animate-live {
   animation: pulse-dot 1.6s ease-in-out infinite;
 }
+
+@keyframes loadbar {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(300%); }
+}
+.animate-loadbar {
+  animation: loadbar 0.9s ease-in-out infinite;
+}

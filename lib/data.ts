@@ -34,15 +34,17 @@ export { FORMER_MEMBER, displayName as nameOf } from './names';
 /** Namen aller Gruppenmitglieder und (optional) aller Teilnehmer einer Sitzung, inkl. Gäste. */
 export async function loadNames(sb: SupabaseClient, groupId: string, sessionId?: string): Promise<Record<PlayerKey, string>> {
   const names: Record<PlayerKey, string> = {};
-  const { data: members } = await sb.from('group_members').select('user_id, profiles(display_name)').eq('group_id', groupId);
+  const [{ data: members }, sessionPlayers] = await Promise.all([
+    sb.from('group_members').select('user_id, profiles(display_name)').eq('group_id', groupId),
+    sessionId
+      ? sb.from('session_players').select('id, user_id, guest_name, profiles(display_name)').eq('session_id', sessionId)
+      : Promise.resolve({ data: null }),
+  ]);
   for (const m of (members ?? []) as unknown as { user_id: string; profiles: { display_name: string } | null }[]) {
     names[`u:${m.user_id}`] = m.profiles?.display_name ?? FORMER_MEMBER;
   }
   if (sessionId) {
-    const { data: players } = await sb
-      .from('session_players')
-      .select('id, user_id, guest_name, profiles(display_name)')
-      .eq('session_id', sessionId);
+    const players = sessionPlayers.data;
     for (const p of (players ?? []) as unknown as SessionPlayerRow[]) {
       if (p.user_id) names[`u:${p.user_id}`] = p.profiles?.display_name ?? names[`u:${p.user_id}`] ?? FORMER_MEMBER;
       else names[`g:${p.id}`] = p.guest_name ?? 'Gast';
@@ -59,9 +61,11 @@ export interface SessionPlayerRow {
 }
 
 export async function loadGroup(sb: SupabaseClient, groupId: string, userId: string) {
-  const { data: group } = await sb.from('groups').select('id, name, invite_code, location').eq('id', groupId).maybeSingle();
+  const [{ data: group }, { data: me }] = await Promise.all([
+    sb.from('groups').select('id, name, invite_code, location').eq('id', groupId).maybeSingle(),
+    sb.from('group_members').select('role').eq('group_id', groupId).eq('user_id', userId).maybeSingle(),
+  ]);
   if (!group) return null;
-  const { data: me } = await sb.from('group_members').select('role').eq('group_id', groupId).eq('user_id', userId).maybeSingle();
   return { ...(group as { id: string; name: string; invite_code: string; location: string | null }), isAdmin: me?.role === 'admin' };
 }
 
