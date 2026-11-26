@@ -1,22 +1,28 @@
 import type { Metadata, Viewport } from 'next';
+import '@fontsource-variable/inter';
+import '@fontsource/barlow-condensed/700.css';
+import '@fontsource/barlow-condensed/800.css';
 import './globals.css';
-import { Header } from '@/components/Header';
 
 export const metadata: Metadata = {
   title: 'Billiard-Tracker',
   description: 'Sitzungen, Turniere und Ranglisten für eure Billiard-Runde',
 };
 
-export const viewport: Viewport = { width: 'device-width', initialScale: 1, themeColor: '#065f46' };
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#121214' },
+    { media: '(prefers-color-scheme: dark)', color: '#16181d' },
+  ],
+};
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="de">
-      <body className="min-h-dvh bg-stone-100 text-stone-900 antialiased">
-        <main className="mx-auto max-w-xl px-4 pb-16">
-          <Header />
-          {children}
-        </main>
+      <body className="min-h-dvh antialiased">
+        <div className="mx-auto min-h-dvh max-w-xl pb-16">{children}</div>
       </body>
     </html>
   );
