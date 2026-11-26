@@ -10,3 +10,7 @@ end $$;
 grant usage on schema auth to anon, authenticated;
 grant usage on schema public to anon, authenticated;
 create publication supabase_realtime;
+-- Wie bei Supabase: neue Objekte in public sind standardmäßig für anon/authenticated freigegeben.
+alter default privileges in schema public grant all on tables to anon, authenticated;
+alter default privileges in schema public grant all on functions to anon, authenticated;
+alter default privileges in schema public grant all on sequences to anon, authenticated;

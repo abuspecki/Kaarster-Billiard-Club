@@ -35,6 +35,7 @@ create table public.sessions (
   created_by uuid references public.profiles (id) on delete set null,
   status text not null default 'active' check (status in ('active', 'ended')),
   created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(), -- wird bei Löschungen angefasst, damit alle Handys neu laden
   ended_at timestamptz
 );
 create index on public.sessions (group_id, created_at desc);
@@ -160,6 +161,7 @@ begin
   perform require_uid();
   select * into s from sessions where id = sid;
   if not found then raise exception 'Sitzung nicht gefunden'; end if;
+  if not is_group_member(s.group_id) then raise exception 'Du bist kein Mitglied dieser Gruppe'; end if;
   if not exists (select 1 from session_players where session_id = sid and user_id = auth.uid()) then
     raise exception 'Du bist kein Teilnehmer dieser Sitzung';
   end if;
@@ -310,6 +312,8 @@ begin
   perform assert_session_writer(m.session_id);
   if m.tournament_id is not null then raise exception 'Turnierpartien bitte im Turnierbaum ändern'; end if;
   delete from matches where id = p_match_id;
+  -- DELETE-Ereignisse lassen sich in Realtime nicht nach Sitzung filtern → Sitzung anfassen.
+  update sessions set updated_at = clock_timestamp() where id = m.session_id;
 end $$;
 
 create function public.end_session(p_session_id uuid) returns void
@@ -475,7 +479,9 @@ grant select on all tables in schema public to authenticated;
 grant update (display_name) on public.profiles to authenticated;
 grant update (name) on public.groups to authenticated;
 
-revoke execute on all functions in schema public from public, anon;
+-- Supabase gibt neue Funktionen standardmäßig für anon/authenticated frei → alles entziehen,
+-- dann nur die App-Funktionen gezielt freigeben (interne Helfer bleiben gesperrt).
+revoke execute on all functions in schema public from public, anon, authenticated;
 grant execute on function
   public.is_group_member(uuid), public.is_group_admin(uuid), public.session_group(uuid), public.shares_group(uuid),
   public.create_group(text), public.join_by_code(text), public.start_session(uuid), public.add_guest(uuid, text),

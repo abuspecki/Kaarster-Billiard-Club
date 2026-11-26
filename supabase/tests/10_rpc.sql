@@ -86,7 +86,9 @@ select update_match(:'mid', array[:'pa']::uuid[], array[:'pb']::uuid[], 'B');
 select t.t_assert((select winner_side from matches where id = :'mid') = 'B', 'update_match winner');
 select t.t_assert((select count(*) from match_players where match_id = :'mid') = 2, 'update_match players');
 select record_match(:'sid', array[:'pa']::uuid[], array[:'pc']::uuid[], 'A') as mid2 \gset
+select updated_at as before_delete from sessions where id = :'sid' \gset
 select delete_match(:'mid2');
+select t.t_assert((select updated_at from sessions where id = :'sid') > :'before_delete'::timestamptz, 'delete_match touches session for realtime');
 select t.t_assert(not exists (select 1 from matches where id = :'mid2'), 'delete_match');
 
 -- rls_isolation -------------------------------------------------------------
@@ -97,7 +99,7 @@ select t.t_assert((select count(*) from sessions) = 0, 'rls_isolation: sessions'
 select t.t_assert((select count(*) from session_players) = 0, 'rls_isolation: session_players');
 select t.t_assert((select count(*) from profiles) = 1, 'rls_isolation: only own profile');
 select t.t_throws(format('select record_match(%L, array[%L]::uuid[], array[%L]::uuid[], ''A'')', :'sid', :'pa', :'pb'),
-  'kein Teilnehmer', 'outsider cannot record');
+  'Du bist kein', 'outsider cannot record');
 select t.t_throws(format('insert into groups(name, invite_code) values (''x'', ''ABCDEFGH'')'), 'permission denied', 'no direct insert');
 
 -- tournament_version_conflict ----------------------------------------------
@@ -132,6 +134,17 @@ update groups set name = 'KBC' where id = :'gid';
 select t.t_assert((select name from groups where id = :'gid') = 'KBC', 'admin renames group');
 select remove_member(:'gid', :C);
 select t.t_assert(not exists (select 1 from group_members where group_id = :'gid' and user_id = :C), 'remove_member');
+select set_config('request.jwt.claim.sub', :C, false);
+select t.t_throws(format('select record_match(%L, array[%L]::uuid[], array[%L]::uuid[], ''A'')', :'sid', :'pc', :'pb'),
+  'kein Mitglied', 'removed member cannot record');
+select set_config('request.jwt.claim.sub', :A, false);
+
+-- internal helpers are not callable --------------------------------------
+select set_config('request.jwt.claim.sub', :B, false);
+select t.t_throws(format('select write_match_players(%L, array[%L]::uuid[], array[%L]::uuid[])', :'mid', :'pb', :'pa'),
+  'permission denied', 'write_match_players not callable');
+select t.t_throws('select gen_code(6)', 'permission denied', 'gen_code not callable');
+select t.t_throws(format('select assert_session_writer(%L)', :'sid'), 'permission denied', 'assert_session_writer not callable');
 
 -- ended_session_rejects_match ----------------------------------------------
 select set_config('request.jwt.claim.sub', :B, false);
