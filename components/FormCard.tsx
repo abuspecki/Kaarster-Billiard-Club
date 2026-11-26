@@ -13,6 +13,7 @@ export function SingleFieldForm({
   defaultValue,
   maxLength,
   uppercase,
+  optional,
 }: {
   action: (state: FormState, form: FormData) => Promise<FormState>;
   name: string;
@@ -21,6 +22,7 @@ export function SingleFieldForm({
   defaultValue?: string;
   maxLength?: number;
   uppercase?: boolean;
+  optional?: boolean;
 }) {
   const [state, formAction, pending] = useActionState(action, {});
   return (
@@ -29,7 +31,7 @@ export function SingleFieldForm({
         <Input
           name={name}
           placeholder={placeholder}
-          required
+          required={!optional}
           maxLength={maxLength}
           defaultValue={defaultValue}
           autoCapitalize={uppercase ? 'characters' : undefined}

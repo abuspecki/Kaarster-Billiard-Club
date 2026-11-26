@@ -132,6 +132,13 @@ select regenerate_invite(:'gid') as new_code \gset
 select t.t_assert(:'new_code' <> :'invite_code', 'regenerate_invite changes code');
 update groups set name = 'KBC' where id = :'gid';
 select t.t_assert((select name from groups where id = :'gid') = 'KBC', 'admin renames group');
+update groups set location = 'Spielhalle Kaarst' where id = :'gid';
+select t.t_assert((select location from groups where id = :'gid') = 'Spielhalle Kaarst', 'admin sets location');
+select t.t_throws(format('update groups set location = %L where id = %L', repeat('x', 61), :'gid'), 'check', 'location max 60');
+select set_config('request.jwt.claim.sub', :B, false);
+update groups set location = 'Hack' where id = :'gid';
+select t.t_assert((select location from groups where id = :'gid') = 'Spielhalle Kaarst', 'member cannot set location');
+select set_config('request.jwt.claim.sub', :A, false);
 select remove_member(:'gid', :C);
 select t.t_assert(not exists (select 1 from group_members where group_id = :'gid' and user_id = :C), 'remove_member');
 select set_config('request.jwt.claim.sub', :C, false);

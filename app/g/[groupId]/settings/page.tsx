@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { regenerateInvite, removeMember, renameGroup } from '@/app/actions/groups';
+import { regenerateInvite, removeMember, renameGroup, updateGroupLocation } from '@/app/actions/groups';
 import { SingleFieldForm } from '@/components/FormCard';
 import { ActionButton } from '@/components/ActionButton';
 import { Card } from '@/components/ui';
@@ -28,6 +28,19 @@ export default async function SettingsPage({ params }: { params: Promise<{ group
       <Card>
         <h2 className="mb-2 font-semibold">Gruppenname</h2>
         <SingleFieldForm action={renameGroup.bind(null, groupId)} name="name" placeholder="Name" button="Speichern" defaultValue={group.name} maxLength={60} />
+      </Card>
+
+      <Card>
+        <h2 className="mb-2 font-semibold">Ort</h2>
+        <SingleFieldForm
+          action={updateGroupLocation.bind(null, groupId)}
+          name="location"
+          placeholder="z. B. Spielhalle Kaarst"
+          button="Speichern"
+          defaultValue={group.location ?? ''}
+          maxLength={60}
+          optional
+        />
       </Card>
 
       <Card>

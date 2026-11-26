@@ -39,6 +39,16 @@ export async function renameGroup(groupId: string, _: FormState, form: FormData)
   return { info: 'Gespeichert.' };
 }
 
+export async function updateGroupLocation(groupId: string, _: FormState, form: FormData): Promise<FormState> {
+  const raw = String(form.get('location') ?? '').trim();
+  if (raw.length > 60) return { error: 'Ort darf höchstens 60 Zeichen haben.' };
+  const sb = await createServerSupabase();
+  const { error } = await sb.from('groups').update({ location: raw || null }).eq('id', groupId);
+  if (error) return { error: error.message };
+  revalidatePath(`/g/${groupId}`, 'layout');
+  return { info: 'Gespeichert.' };
+}
+
 export async function removeMember(groupId: string, userId: string): Promise<FormState> {
   const sb = await createServerSupabase();
   const { error } = await sb.rpc('remove_member', { p_group_id: groupId, p_user_id: userId });

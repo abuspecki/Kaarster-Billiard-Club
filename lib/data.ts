@@ -59,9 +59,9 @@ export interface SessionPlayerRow {
 }
 
 export async function loadGroup(sb: SupabaseClient, groupId: string, userId: string) {
-  const { data: group } = await sb.from('groups').select('id, name, invite_code').eq('id', groupId).maybeSingle();
+  const { data: group } = await sb.from('groups').select('id, name, invite_code, location').eq('id', groupId).maybeSingle();
   if (!group) return null;
   const { data: me } = await sb.from('group_members').select('role').eq('group_id', groupId).eq('user_id', userId).maybeSingle();
-  return { ...(group as { id: string; name: string; invite_code: string }), isAdmin: me?.role === 'admin' };
+  return { ...(group as { id: string; name: string; invite_code: string; location: string | null }), isAdmin: me?.role === 'admin' };
 }
 
