@@ -1,18 +1,14 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Card } from '@/components/ui';
+import { AppBar } from '@/components/sport/AppBar';
+import { EmptyState } from '@/components/sport/EmptyState';
+import { FormDots } from '@/components/sport/FormDots';
+import { PlayerBadge } from '@/components/sport/PlayerBadge';
+import { SectionCard } from '@/components/sport/SectionCard';
+import { StatTiles } from '@/components/sport/StatTiles';
 import { loadGroup, loadGroupMatches, loadNames } from '@/lib/data';
-import { computeStandings, headToHead } from '@/lib/stats';
+import { computeStandings, headToHead, recentForm } from '@/lib/stats';
 import { createServerSupabase, requireUser } from '@/lib/supabase/server';
-
-function Stat({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div className="rounded-xl bg-stone-50 p-3 text-center">
-      <div className="text-2xl font-bold">{value}</div>
-      <div className="text-xs text-stone-500">{label}</div>
-    </div>
-  );
-}
 
 export default async function ProfilePage({ params }: { params: Promise<{ groupId: string; userId: string }> }) {
   const { groupId, userId } = await params;
@@ -24,7 +20,10 @@ export default async function ProfilePage({ params }: { params: Promise<{ groupI
   const key = `u:${userId}`;
   if (!names[key]) notFound();
 
-  const s = computeStandings(matches).find((x) => x.player === key);
+  const standings = computeStandings(matches);
+  const rank = standings.findIndex((x) => x.player === key);
+  const s = standings[rank];
+  const form = recentForm(matches, key, 10);
   const duels = Object.keys(names)
     .filter((k) => k !== key)
     .map((k) => ({ k, ...headToHead(matches, key, k) }))
@@ -32,47 +31,70 @@ export default async function ProfilePage({ params }: { params: Promise<{ groupI
     .sort((a, b) => b.aWins + b.bWins - (a.aWins + a.bWins));
 
   return (
-    <div className="space-y-4">
-      <Link href={`/g/${groupId}`} className="text-sm font-semibold text-emerald-700">
-        ‹ {group.name}
-      </Link>
-      <h1 className="text-2xl font-bold">{names[key]}</h1>
-
-      <Card>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <Stat label="Siege" value={s?.wins ?? 0} />
-          <Stat label="Niederlagen" value={s?.losses ?? 0} />
-          <Stat label="Siegquote" value={`${Math.round((s?.winRate ?? 0) * 100)} %`} />
-          <Stat label="Partien" value={s?.played ?? 0} />
-        </div>
-        <div className="mt-3 grid grid-cols-2 gap-2 text-sm text-stone-600">
-          <div>
-            Einzel: <b>{s?.singlesWins ?? 0}</b> : {s?.singlesLosses ?? 0}
+    <>
+      <AppBar title="Spielerprofil" subtitle={group.name} back={{ href: `/g/${groupId}?tab=spieler`, label: group.name }} />
+      <div className="space-y-3 p-4">
+        <section className="shadow-card overflow-hidden rounded-xl border border-line bg-surface">
+          <div className="flex items-center gap-4 p-4">
+            <PlayerBadge player={key} name={names[key]} size="lg" />
+            <div className="min-w-0">
+              <h2 className="font-cond truncate text-3xl leading-tight font-extrabold uppercase">{names[key]}</h2>
+              <p className="text-sm text-muted">{s ? `Platz ${rank + 1} in der Tabelle` : 'Noch keine Partie gespielt'}</p>
+            </div>
           </div>
-          <div>
-            Team: <b>{s?.teamWins ?? 0}</b> : {s?.teamLosses ?? 0}
+          <div className="px-4 pb-4">
+            <StatTiles
+              items={[
+                { value: s?.wins ?? 0, label: 'Siege' },
+                { value: s?.losses ?? 0, label: 'Niederl.' },
+                { value: s ? `${Math.round(s.winRate * 100)}%` : '–', label: 'Quote' },
+                { value: s?.played ?? 0, label: 'Partien' },
+              ]}
+            />
           </div>
-        </div>
-      </Card>
+        </section>
 
-      <Card>
-        <h2 className="mb-2 font-semibold">Direkter Vergleich</h2>
-        {duels.length === 0 ? (
-          <p className="text-sm text-stone-500">Noch keine Duelle.</p>
-        ) : (
-          <ul className="divide-y divide-stone-100">
-            {duels.map((d) => (
-              <li key={d.k} className="flex justify-between py-2">
-                <span>Gegen {names[d.k]}</span>
-                <span className="font-mono font-bold">
-                  <span className={d.aWins >= d.bWins ? 'text-emerald-700' : ''}>{d.aWins}</span> :{' '}
-                  <span className={d.bWins > d.aWins ? 'text-red-700' : ''}>{d.bWins}</span>
-                </span>
-              </li>
-            ))}
-          </ul>
+        {form.length > 0 && (
+          <SectionCard title="Form · letzte Partien">
+            <FormDots form={form} size="md" />
+            <p className="mt-2 text-xs text-muted">Älteste links, neueste rechts.</p>
+          </SectionCard>
         )}
-      </Card>
-    </div>
+
+        <SectionCard title="Einzel & Team">
+          <StatTiles
+            items={[
+              { value: `${s?.singlesWins ?? 0}:${s?.singlesLosses ?? 0}`, label: 'Einzel' },
+              { value: `${s?.teamWins ?? 0}:${s?.teamLosses ?? 0}`, label: 'Doppel/Team' },
+            ]}
+          />
+        </SectionCard>
+
+        <SectionCard title="Direkter Vergleich" flush>
+          {duels.length === 0 ? (
+            <EmptyState title="Noch keine Duelle" />
+          ) : (
+            <ul>
+              {duels.map((d) => {
+                const ahead = d.aWins > d.bWins ? 'win' : d.aWins < d.bWins ? 'loss' : 'even';
+                return (
+                  <li key={d.k} className="border-t border-line first:border-t-0">
+                    <Link href={`/g/${groupId}/p/${d.k.slice(2)}`} className="flex items-center gap-3 px-4 py-3 hover:bg-surface-2">
+                      <PlayerBadge player={d.k} name={names[d.k]} />
+                      <span className="min-w-0 flex-1 truncate font-semibold">gegen {names[d.k]}</span>
+                      <span className="font-cond text-2xl font-extrabold tabular-nums">
+                        <span className={ahead === 'win' ? 'text-win' : ''}>{d.aWins}</span>
+                        <span className="mx-1 text-muted">:</span>
+                        <span className={ahead === 'loss' ? 'text-loss' : ''}>{d.bWins}</span>
+                      </span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </SectionCard>
+      </div>
+    </>
   );
 }
