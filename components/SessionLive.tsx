@@ -4,13 +4,20 @@ import Link from 'next/link';
 import { useState, useTransition } from 'react';
 import { addGuest, endSession, joinSession } from '@/app/actions/session';
 import type { Sides } from '@/lib/match-entry';
-import type { SessionMatch, SessionView } from '@/lib/session-data';
+import type { SessionMatch, SessionPlayer, SessionView } from '@/lib/session-data';
 import { useRealtimeRefresh } from '@/lib/useRealtimeRefresh';
 import { MatchEntry } from './MatchEntry';
 import { ShareButton } from './ShareButton';
-import { Button, Card, ErrorText, Input } from './ui';
+import { AppBar, LiveBadge, MutedBadge } from './sport/AppBar';
+import { EmptyState } from './sport/EmptyState';
+import { PlayerBadge } from './sport/PlayerBadge';
+import { ResultCard } from './sport/ResultCard';
+import { SectionCard } from './sport/SectionCard';
+import { Toast } from './sport/Toast';
+import { Button, ErrorText, Input } from './ui';
 
 const time = (iso: string) => new Date(iso).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Berlin' });
+const keyOf = (p: SessionPlayer) => (p.userId ? `u:${p.userId}` : `g:${p.id}`);
 
 export function SessionLive({ view, canEnd }: { view: SessionView; canEnd: boolean }) {
   useRealtimeRefresh(view.id);
@@ -18,12 +25,24 @@ export function SessionLive({ view, canEnd }: { view: SessionView; canEnd: boole
   const [guestName, setGuestName] = useState('');
   const [showGuest, setShowGuest] = useState(false);
   const [error, setError] = useState<string>();
+  const [toast, setToast] = useState<{ message: string | null; stamp: number }>({ message: null, stamp: 0 });
   const [pending, start] = useTransition();
 
   const active = view.status === 'active';
   const canWrite = active && view.me.playerId !== null;
-  const nameOf = (id: string) => view.players.find((p) => p.id === id)?.name ?? '?';
-  const label = (ids: string[]) => ids.map(nameOf).join(' + ');
+  const byId = (id: string) => view.players.find((p) => p.id === id);
+  const side = (ids: string[], strong: boolean) => (
+    <>
+      <span className="flex shrink-0 -space-x-1.5">
+        {ids.map((id) => {
+          const p = byId(id);
+          return p ? <PlayerBadge key={id} player={keyOf(p)} name={p.name} size="sm" /> : null;
+        })}
+      </span>
+      <span className={`truncate ${strong ? '' : 'font-normal'}`}>{ids.map((id) => byId(id)?.name ?? '?').join(' + ')}</span>
+    </>
+  );
+  const notify = (message: string) => setToast((t) => ({ message, stamp: t.stamp + 1 }));
 
   const act = (fn: () => Promise<{ error?: string }>) =>
     start(async () => {
@@ -32,134 +51,130 @@ export function SessionLive({ view, canEnd }: { view: SessionView; canEnd: boole
     });
 
   return (
-    <div className="space-y-4">
-      <div>
-        <Link href={`/g/${view.groupId}`} className="text-sm font-semibold text-emerald-700">
-          ‹ {view.groupName}
-        </Link>
-        <div className="mt-1 flex items-center justify-between gap-2">
-          <h1 className="text-2xl font-bold">{active ? 'Sitzung läuft' : 'Sitzung beendet'}</h1>
-          {active && (
-            <ShareButton url={`/join/${view.code}`} text={`Spiel mit! Code: ${view.code}`} title="Billiard-Sitzung" label={`Code ${view.code}`} className="font-mono" />
-          )}
-        </div>
-      </div>
+    <>
+      <AppBar
+        title={active ? 'Sitzung' : 'Sitzung beendet'}
+        subtitle={`${view.groupName} · ${view.matches.length} ${view.matches.length === 1 ? 'Partie' : 'Partien'} · ${view.players.length} Spieler`}
+        badge={active ? <LiveBadge /> : <MutedBadge label="BEENDET" />}
+        back={{ href: `/g/${view.groupId}`, label: view.groupName }}
+        right={
+          active ? (
+            <ShareButton
+              url={`/join/${view.code}`}
+              text={`Spiel mit! Code: ${view.code}`}
+              title="Billiard-Sitzung"
+              label={view.code}
+              className="border-white/20! bg-white/10! px-3 py-2 font-mono text-bar-fg!"
+            />
+          ) : undefined
+        }
+      />
 
-      <ErrorText>{error}</ErrorText>
+      <div className="space-y-3 p-4">
+        <ErrorText>{error}</ErrorText>
 
-      {!active && (
-        <Link href={`/s/${view.id}/summary`} className="block rounded-2xl bg-emerald-700 p-4 text-center font-semibold text-white">
-          Zur Abend-Zusammenfassung
-        </Link>
-      )}
-
-      {active && view.me.playerId === null && (
-        <Button className="w-full py-4 text-lg" disabled={pending} onClick={() => act(() => joinSession(view.id, view.code))}>
-          Mitspielen
-        </Button>
-      )}
-
-      {canWrite && (
-        <Button
-          className="w-full py-5 text-xl"
-          onClick={() => setEntry({ initial: { a: view.me.playerId ? [view.me.playerId] : [], b: [] } })}
-        >
-          + Partie eintragen
-        </Button>
-      )}
-
-      <Card>
-        <div className="mb-2 flex items-center justify-between">
-          <h2 className="font-semibold">Spieler ({view.players.length})</h2>
-          {canWrite && (
-            <button onClick={() => setShowGuest((v) => !v)} className="text-sm font-semibold text-emerald-700">
-              + Gast
-            </button>
-          )}
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {view.players.map((p) => (
-            <span key={p.id} className="rounded-full bg-stone-100 px-3 py-1 text-sm">
-              {p.name}
-              {p.isGuest && <span className="ml-1 text-xs text-stone-500">(Gast)</span>}
-            </span>
-          ))}
-        </div>
-        {showGuest && (
-          <form
-            className="mt-3 flex gap-2"
-            onSubmit={(e) => {
-              e.preventDefault();
-              act(async () => {
-                const r = await addGuest(view.id, guestName);
-                if (!r.error) {
-                  setGuestName('');
-                  setShowGuest(false);
-                }
-                return r;
-              });
-            }}
-          >
-            <Input value={guestName} onChange={(e) => setGuestName(e.target.value)} placeholder="Name des Gasts" maxLength={40} required autoFocus />
-            <Button disabled={pending} className="shrink-0">
-              Hinzufügen
-            </Button>
-          </form>
-        )}
-        <p className="mt-2 text-xs text-stone-500">Gäste zählen heute mit, aber nicht in der Gruppen-Rangliste.</p>
-      </Card>
-
-      <Card>
-        <h2 className="mb-2 font-semibold">Partien ({view.matches.length})</h2>
-        {view.matches.length === 0 ? (
-          <p className="text-sm text-stone-500">Noch keine Partie. Los geht’s!</p>
-        ) : (
-          <ul className="divide-y divide-stone-100">
-            {view.matches.map((m) => {
-              const winners = m.winner === 'A' ? m.sideA : m.sideB;
-              const losers = m.winner === 'A' ? m.sideB : m.sideA;
-              const editable = canWrite && !m.isTournament;
-              return (
-                <li key={m.id}>
-                  <button
-                    disabled={!editable}
-                    onClick={() => setEntry({ initial: { a: m.sideA, b: m.sideB }, editing: m })}
-                    className="flex w-full items-center justify-between gap-2 py-2 text-left"
-                  >
-                    <span>
-                      <b>{label(winners)}</b> <span className="text-stone-500">schlägt</span> {label(losers)}
-                      {m.isTournament && <span className="ml-1">🏆</span>}
-                      <span className="block text-xs text-stone-400">
-                        {time(m.createdAt)}
-                        {m.createdByName && ` · eingetragen von ${m.createdByName}`}
-                      </span>
-                    </span>
-                    {editable && <span className="text-stone-300">✎</span>}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </Card>
-
-      <div className="grid grid-cols-2 gap-2">
-        <Link href={`/s/${view.id}/tournament`} className="rounded-xl bg-white px-4 py-3 text-center font-semibold ring-1 ring-stone-300">
-          🏆 Turnier
-        </Link>
-        {active && canEnd ? (
-          <Button
-            variant="danger"
-            disabled={pending}
-            onClick={() => confirm('Sitzung beenden? Danach kann nichts mehr eingetragen werden.') && act(() => endSession(view.id))}
-          >
-            Sitzung beenden
-          </Button>
-        ) : (
-          <Link href={`/s/${view.id}/summary`} className="rounded-xl bg-white px-4 py-3 text-center font-semibold ring-1 ring-stone-300">
-            Zusammenfassung
+        {!active && (
+          <Link href={`/s/${view.id}/summary`} className="block rounded-xl bg-accent p-4 text-center font-extrabold text-white">
+            Zum Spielbericht ›
           </Link>
         )}
+
+        {active && view.me.playerId === null && (
+          <Button className="w-full py-4 text-lg" disabled={pending} onClick={() => act(() => joinSession(view.id, view.code))}>
+            Mitspielen
+          </Button>
+        )}
+
+        {canWrite && (
+          <Button className="w-full py-5 text-xl" onClick={() => setEntry({ initial: { a: view.me.playerId ? [view.me.playerId] : [], b: [] } })}>
+            + Partie eintragen
+          </Button>
+        )}
+
+        <SectionCard title={`Partien (${view.matches.length})`} flush>
+          {view.matches.length === 0 ? (
+            <EmptyState title="Noch keine Partie" text={canWrite ? 'Tippe auf „+ Partie eintragen“, sobald das erste Spiel vorbei ist.' : undefined} />
+          ) : (
+            <div className="divide-y divide-line">
+              {view.matches.map((m) => {
+                const winners = m.winner === 'A' ? m.sideA : m.sideB;
+                const losers = m.winner === 'A' ? m.sideB : m.sideA;
+                const editable = canWrite && !m.isTournament;
+                return (
+                  <ResultCard
+                    key={m.id}
+                    winner={side(winners, true)}
+                    loser={side(losers, false)}
+                    meta={`${time(m.createdAt)}${m.createdByName ? ` · eingetragen von ${m.createdByName}` : ''}`}
+                    tag={m.isTournament ? 'Turnier' : undefined}
+                    trailing={editable ? <span aria-hidden>✎</span> : undefined}
+                    onClick={editable ? () => setEntry({ initial: { a: m.sideA, b: m.sideB }, editing: m }) : undefined}
+                  />
+                );
+              })}
+            </div>
+          )}
+        </SectionCard>
+
+        <SectionCard title={`Spieler (${view.players.length})`} action={canWrite ? <button onClick={() => setShowGuest((v) => !v)}>+ Gast</button> : undefined}>
+          <div className="flex flex-wrap gap-2">
+            {view.players.map((p) => (
+              <span key={p.id} className="flex items-center gap-1.5 rounded-full bg-surface-2 py-1 pr-3 pl-1 text-sm font-semibold">
+                <PlayerBadge player={keyOf(p)} name={p.name} size="sm" />
+                {p.name}
+                {p.isGuest && <span className="text-xs font-normal text-muted">Gast</span>}
+              </span>
+            ))}
+          </div>
+          {showGuest && (
+            <form
+              className="mt-3 flex gap-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+                act(async () => {
+                  const r = await addGuest(view.id, guestName);
+                  if (!r.error) {
+                    setGuestName('');
+                    setShowGuest(false);
+                    notify('Gast hinzugefügt ✓');
+                  }
+                  return r;
+                });
+              }}
+            >
+              <Input value={guestName} onChange={(e) => setGuestName(e.target.value)} placeholder="Name des Gasts" maxLength={40} required autoFocus />
+              <Button disabled={pending} className="shrink-0">
+                Hinzufügen
+              </Button>
+            </form>
+          )}
+          <p className="mt-3 text-xs text-muted">Gäste zählen heute mit, aber nicht in der Gruppen-Tabelle.</p>
+        </SectionCard>
+
+        <div className="grid grid-cols-2 gap-2">
+          <Link
+            href={`/s/${view.id}/tournament`}
+            className="shadow-card rounded-lg border border-line bg-surface px-4 py-3 text-center font-bold hover:bg-surface-2"
+          >
+            🏆 Turnier
+          </Link>
+          {active && canEnd ? (
+            <Button
+              variant="danger"
+              disabled={pending}
+              onClick={() => confirm('Sitzung beenden? Danach kann nichts mehr eingetragen werden.') && act(() => endSession(view.id))}
+            >
+              Sitzung beenden
+            </Button>
+          ) : (
+            <Link
+              href={`/s/${view.id}/summary`}
+              className="shadow-card rounded-lg border border-line bg-surface px-4 py-3 text-center font-bold hover:bg-surface-2"
+            >
+              Spielbericht
+            </Link>
+          )}
+        </div>
       </div>
 
       {entry && (
@@ -169,8 +184,10 @@ export function SessionLive({ view, canEnd }: { view: SessionView; canEnd: boole
           initial={entry.initial}
           editing={entry.editing}
           onClose={() => setEntry(null)}
+          onSaved={notify}
         />
       )}
-    </div>
+      <Toast message={toast.message} stamp={toast.stamp} />
+    </>
   );
 }
