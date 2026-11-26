@@ -4,6 +4,7 @@ export interface MatchRow {
   id: string;
   created_at: string;
   winner_side: Side;
+  session_id?: string;
   match_players: { side: Side; user_id: string | null; session_player_id: string }[];
 }
 
@@ -17,5 +18,6 @@ export function toMatchRecords(rows: MatchRow[]): MatchRecord[] {
     sideA: r.match_players.filter((p) => p.side === 'A').map(playerKeyOf),
     sideB: r.match_players.filter((p) => p.side === 'B').map(playerKeyOf),
     winner: r.winner_side,
+    ...(r.session_id ? { sessionId: r.session_id } : {}),
   }));
 }

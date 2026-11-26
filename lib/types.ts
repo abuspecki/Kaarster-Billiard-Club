@@ -8,6 +8,7 @@ export interface MatchRecord {
   sideA: PlayerKey[];
   sideB: PlayerKey[];
   winner: Side;
+  sessionId?: string;
 }
 
 export interface Standing {

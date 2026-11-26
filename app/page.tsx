@@ -1,7 +1,11 @@
 import Link from 'next/link';
+import { logout } from '@/app/actions/auth';
 import { createGroup, joinCode } from '@/app/actions/groups';
 import { SingleFieldForm } from '@/components/FormCard';
-import { Card } from '@/components/ui';
+import { AppBar } from '@/components/sport/AppBar';
+import { EmptyState } from '@/components/sport/EmptyState';
+import { SectionCard } from '@/components/sport/SectionCard';
+import { groupInitials } from '@/lib/design';
 import { createServerSupabase, requireUser } from '@/lib/supabase/server';
 
 export default async function Home() {
@@ -9,41 +13,58 @@ export default async function Home() {
   const sb = await createServerSupabase();
   const { data } = await sb
     .from('group_members')
-    .select('role, groups(id, name)')
+    .select('role, groups(id, name, location)')
     .eq('user_id', user.id)
     .order('joined_at');
-  const groups = ((data ?? []) as unknown as { role: string; groups: { id: string; name: string } | null }[]).filter((g) => g.groups);
+  const groups = ((data ?? []) as unknown as { role: string; groups: { id: string; name: string; location: string | null } | null }[])
+    .map((g) => g.groups)
+    .filter((g): g is { id: string; name: string; location: string | null } => !!g);
 
   return (
-    <div className="space-y-4">
-      <Card>
-        <h2 className="mb-2 font-semibold">Code eingeben</h2>
-        <p className="mb-3 text-sm text-stone-600">Sitzungscode (6 Zeichen) oder Gruppen-Einladung (8 Zeichen).</p>
-        <SingleFieldForm action={joinCode} name="code" placeholder="z. B. K7P2QX" button="Los" maxLength={8} uppercase />
-      </Card>
+    <>
+      <AppBar
+        title="Billiard-Tracker"
+        subtitle={`Angemeldet als ${user.displayName}`}
+        initials="BT"
+        right={
+          <form action={logout}>
+            <button className="rounded-lg px-2 py-1.5 text-xs font-bold text-bar-muted hover:bg-white/10 hover:text-bar-fg">Abmelden</button>
+          </form>
+        }
+      />
+      <div className="space-y-3 p-4">
+        <SectionCard title="Meine Gruppen" flush>
+          {groups.length === 0 ? (
+            <EmptyState title="Noch keine Gruppe" text="Leg unten eine Gruppe an oder gib einen Einladungscode ein." />
+          ) : (
+            <ul>
+              {groups.map((g) => (
+                <li key={g.id} className="border-t border-line first:border-t-0">
+                  <Link href={`/g/${g.id}`} className="flex items-center gap-3 px-4 py-3 hover:bg-surface-2">
+                    <span className="font-cond grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-accent text-lg font-extrabold tracking-wide text-white">
+                      {groupInitials(g.name)}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="font-cond block truncate text-xl leading-tight font-extrabold uppercase">{g.name}</span>
+                      {g.location && <span className="block truncate text-xs text-muted">{g.location}</span>}
+                    </span>
+                    <span className="text-muted">›</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </SectionCard>
 
-      <Card>
-        <h2 className="mb-3 font-semibold">Meine Gruppen</h2>
-        {groups.length === 0 ? (
-          <p className="text-sm text-stone-600">Du bist noch in keiner Gruppe. Leg eine an oder gib oben einen Code ein.</p>
-        ) : (
-          <ul className="divide-y divide-stone-100">
-            {groups.map((g) => (
-              <li key={g.groups!.id}>
-                <Link href={`/g/${g.groups!.id}`} className="flex items-center justify-between py-3 text-lg font-medium">
-                  {g.groups!.name}
-                  <span className="text-stone-400">›</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Card>
+        <SectionCard title="Code eingeben">
+          <p className="mb-3 text-sm text-muted">Sitzungscode (6 Zeichen) oder Gruppen-Einladung (8 Zeichen).</p>
+          <SingleFieldForm action={joinCode} name="code" placeholder="z. B. K7P2QX" button="Los" maxLength={8} uppercase />
+        </SectionCard>
 
-      <Card>
-        <h2 className="mb-3 font-semibold">Neue Gruppe</h2>
-        <SingleFieldForm action={createGroup} name="name" placeholder="Name, z. B. Kaarster Billiard Club" button="Anlegen" maxLength={60} />
-      </Card>
-    </div>
+        <SectionCard title="Neue Gruppe">
+          <SingleFieldForm action={createGroup} name="name" placeholder="Name, z. B. Kaarster Billiard Club" button="Anlegen" maxLength={60} />
+        </SectionCard>
+      </div>
+    </>
   );
 }

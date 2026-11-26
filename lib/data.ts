@@ -6,7 +6,7 @@ import type { MatchRecord, PlayerKey } from './types';
 
 export { toMatchRecords } from './mapping';
 
-const MATCH_SELECT = 'id, created_at, winner_side, match_players(side, user_id, session_player_id)';
+const MATCH_SELECT = 'id, created_at, session_id, winner_side, match_players(side, user_id, session_player_id)';
 const PAGE = 1000;
 
 async function loadMatches(sb: SupabaseClient, column: 'group_id' | 'session_id', value: string): Promise<MatchRecord[]> {
