@@ -15,7 +15,7 @@ import { Tabs } from '@/components/sport/Tabs';
 import { champion, type BracketMatch } from '@/lib/bracket';
 import { loadGroup, loadGroupMatches, loadNames } from '@/lib/data';
 import { groupInitials } from '@/lib/design';
-import { berlinTime, lastEvening, parseTab, stripItems, type GroupTab } from '@/lib/group-view';
+import { berlinTime, dayLabel, lastEvening, parseTab, stripItems, type GroupTab } from '@/lib/group-view';
 import { displayName } from '@/lib/names';
 import { computeStandings, recentForm } from '@/lib/stats';
 import { sessionSummary } from '@/lib/summary';
@@ -172,7 +172,7 @@ function Overview({
               key={s.id}
               href={`/s/${s.id}`}
               title="Sitzung läuft"
-              meta={`seit ${berlinTime(s.created_at)} · ${count} ${count === 1 ? 'Partie' : 'Partien'} · Code ${s.code}`}
+              meta={`seit ${dayLabel(s.created_at) === 'HEUTE' ? '' : `${dateLabel(s.created_at)}, `}${berlinTime(s.created_at)} · ${count} ${count === 1 ? 'Partie' : 'Partien'} · Code ${s.code}`}
             />
           );
         })}
@@ -203,6 +203,31 @@ function Overview({
             />
           </SectionCard>
         )}
+
+        {(() => {
+          const past = sessions.filter((x) => x.status === 'ended' && (bySession.get(x.id)?.length ?? 0) > 0 && x.id !== evening?.sessionId).slice(0, 10);
+          if (past.length === 0) return null;
+          return (
+            <SectionCard title="Frühere Abende" flush>
+              <ul>
+                {past.map((x) => {
+                  const n = bySession.get(x.id)?.length ?? 0;
+                  return (
+                    <li key={x.id} className="border-t border-line first:border-t-0">
+                      <Link href={`/s/${x.id}/summary`} className="flex items-center gap-3 px-4 py-3 hover:bg-surface-2">
+                        <span className="min-w-0 flex-1 truncate font-semibold">{dateLabel(x.created_at)}</span>
+                        <span className="text-sm text-muted">
+                          {n} {n === 1 ? 'Partie' : 'Partien'}
+                        </span>
+                        <span className="text-muted">›</span>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </SectionCard>
+          );
+        })()}
 
         <SectionCard title="Freunde einladen">
           <p className="mb-3 text-sm text-muted">

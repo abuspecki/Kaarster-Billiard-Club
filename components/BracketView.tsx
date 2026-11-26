@@ -56,7 +56,7 @@ export function BracketView({
           <div className="bg-accent px-4 py-1.5 text-[11px] font-black tracking-widest text-white uppercase">Turniersieger</div>
           <div className="flex items-center gap-3 p-4">
             <span className="text-4xl">🏆</span>
-            <span className="font-cond text-3xl leading-tight font-extrabold uppercase">{teamNames[winner]}</span>
+            <span className="font-cond min-w-0 text-3xl leading-tight font-extrabold break-words uppercase">{teamNames[winner]}</span>
           </div>
         </div>
       )}

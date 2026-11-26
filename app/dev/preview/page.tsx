@@ -166,6 +166,23 @@ export default function Preview() {
           canWrite
         />
 
+        <BracketView
+          sessionId="x"
+          tournamentId="t2"
+          version={0}
+          bracket={setWinner(generateBracket(2), 'r1-s0', 0)}
+          teams={[['p1'], ['p2']]}
+          teamNames={['Maximilian-Alexander-vonKaarst + Leonie-Sophie', 'Lea']}
+          players={players}
+          canWrite={false}
+        />
+        <div className="flex flex-wrap gap-2">
+          <span className="flex max-w-full items-center gap-1.5 rounded-full bg-surface-2 py-1 pr-3 pl-1 text-sm font-semibold">
+            <PlayerBadge player="u:long" name="Maximilian" size="sm" />
+            <span className="truncate">Maximilian-Alexander von Kaarst-Büttgen der Zweite</span>
+          </span>
+        </div>
+
         <h2 className="font-cond pt-4 text-lg font-extrabold uppercase">Profil</h2>
         <SectionCard>
           <div className="flex items-center gap-4">

@@ -41,3 +41,6 @@ export function groupInitials(name: string): string {
     .join('')
     .toUpperCase();
 }
+
+/** Füllfarben der großen Form-Kästchen (mit weißer Schrift) – in hell und dunkel gleich. */
+export const FORM_FILL = { W: '#15803d', L: '#b91c1c' } as const;

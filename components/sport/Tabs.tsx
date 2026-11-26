@@ -7,7 +7,6 @@ export function Tabs({ tabs, active }: { tabs: { key: string; label: string; hre
         <Link
           key={t.key}
           href={t.href}
-          replace
           scroll={false}
           aria-current={t.key === active ? 'page' : undefined}
           className={`shrink-0 border-b-[3px] pb-2.5 transition ${

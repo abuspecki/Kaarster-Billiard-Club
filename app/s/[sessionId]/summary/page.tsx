@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ShareButton } from '@/components/ShareButton';
-import { AppBar } from '@/components/sport/AppBar';
+import { AppBar, LiveBadge } from '@/components/sport/AppBar';
 import { EmptyState } from '@/components/sport/EmptyState';
 import { LeagueTable } from '@/components/sport/LeagueTable';
 import { PlayerBadge } from '@/components/sport/PlayerBadge';
@@ -50,7 +50,10 @@ export default async function SummaryPage({ params }: { params: Promise<{ sessio
         <section className="shadow-card overflow-hidden rounded-xl border border-line bg-surface">
           <div className="flex items-center justify-between bg-bar px-4 py-2 text-bar-fg">
             <span className="font-cond text-sm font-extrabold tracking-widest uppercase">{groupInitials(view.groupName)} · Spielbericht</span>
-            <span className="text-xs text-bar-muted">{date}</span>
+            <span className="flex items-center gap-2 text-xs text-bar-muted">
+              {view.status === 'active' && <LiveBadge label="LÄUFT NOCH" />}
+              {date}
+            </span>
           </div>
           {pon ? (
             <div className="flex items-center gap-4 p-5">

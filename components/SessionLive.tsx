@@ -119,9 +119,9 @@ export function SessionLive({ view, canEnd }: { view: SessionView; canEnd: boole
         <SectionCard title={`Spieler (${view.players.length})`} action={canWrite ? <button onClick={() => setShowGuest((v) => !v)}>+ Gast</button> : undefined}>
           <div className="flex flex-wrap gap-2">
             {view.players.map((p) => (
-              <span key={p.id} className="flex items-center gap-1.5 rounded-full bg-surface-2 py-1 pr-3 pl-1 text-sm font-semibold">
+              <span key={p.id} className="flex max-w-full items-center gap-1.5 rounded-full bg-surface-2 py-1 pr-3 pl-1 text-sm font-semibold">
                 <PlayerBadge player={keyOf(p)} name={p.name} size="sm" />
-                {p.name}
+                <span className="truncate">{p.name}</span>
                 {p.isGuest && <span className="text-xs font-normal text-muted">Gast</span>}
               </span>
             ))}

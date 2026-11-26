@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AVATAR_PALETTE, avatarColor, groupInitials, initialOf } from '@/lib/design';
+import { AVATAR_PALETTE, FORM_FILL, avatarColor, groupInitials, initialOf } from '@/lib/design';
 
 function luminance(hex: string) {
   const [r, g, b] = [1, 3, 5].map((i) => {
@@ -42,5 +42,12 @@ describe('initials', () => {
   it('initialOf', () => {
     expect(initialOf('max')).toBe('M');
     expect(initialOf('')).toBe('?');
+  });
+});
+
+describe('form box fills', () => {
+  it('white letters on win/loss boxes are readable in both themes', () => {
+    expect(contrast(FORM_FILL.W, '#ffffff')).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(FORM_FILL.L, '#ffffff')).toBeGreaterThanOrEqual(4.5);
   });
 });

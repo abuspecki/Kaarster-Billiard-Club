@@ -12,11 +12,21 @@ export function parseTab(v: unknown): GroupTab {
 export const berlinTime = (iso: string) =>
   new Date(iso).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Berlin' });
 
+const berlinDay = (d: Date) => d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Europe/Berlin' });
+
+/** „HEUTE“ für Partien vom selben Tag (Berliner Zeit), sonst „TT.MM.“. */
+export function dayLabel(iso: string, now: Date = new Date()): string {
+  const d = new Date(iso);
+  if (berlinDay(d) === berlinDay(now)) return 'HEUTE';
+  return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', timeZone: 'Europe/Berlin' });
+}
+
 export function stripItems(
   matches: MatchRecord[],
   names: Record<PlayerKey, string>,
   liveMatchIds: Set<string>,
   limit = 10,
+  now: Date = new Date(),
 ): StripItem[] {
   const label = (keys: PlayerKey[]) => keys.map((k) => displayName(names, k)).join(' + ');
   return [...matches]
@@ -27,6 +37,7 @@ export function stripItems(
       winner: label(match.winner === 'A' ? match.sideA : match.sideB),
       loser: label(match.winner === 'A' ? match.sideB : match.sideA),
       time: berlinTime(match.playedAt),
+      day: dayLabel(match.playedAt, now),
       live: liveMatchIds.has(match.id),
     }));
 }

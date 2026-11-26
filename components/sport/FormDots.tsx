@@ -1,3 +1,5 @@
+import { FORM_FILL } from '@/lib/design';
+
 export function FormDots({ form, size = 'sm' }: { form: ('W' | 'L')[]; size?: 'sm' | 'md' }) {
   const box = size === 'sm' ? 'h-2.5 w-2.5 rounded-[3px]' : 'h-6 w-6 rounded-md text-[11px]';
   return (
@@ -5,7 +7,8 @@ export function FormDots({ form, size = 'sm' }: { form: ('W' | 'L')[]; size?: 's
       {form.map((f, i) => (
         <i
           key={i}
-          className={`${box} grid place-items-center font-black text-white not-italic ${f === 'W' ? 'bg-win' : 'bg-loss'}`}
+          className={`${box} grid place-items-center font-black text-white not-italic ${size === 'sm' ? (f === 'W' ? 'bg-win' : 'bg-loss') : ''}`}
+          style={size === 'md' ? { backgroundColor: FORM_FILL[f] } : undefined}
         >
           {size === 'md' ? (f === 'W' ? 'S' : 'N') : null}
         </i>
