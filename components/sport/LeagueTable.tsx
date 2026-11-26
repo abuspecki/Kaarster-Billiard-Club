@@ -27,8 +27,8 @@ export function LeagueTable({
           <th className="py-1.5 text-left">Spieler</th>
           <th className="w-8 py-1.5 text-right">S</th>
           <th className="w-8 py-1.5 text-right">N</th>
-          <th className="w-10 py-1.5 text-right">%</th>
-          {forms && <th className="w-[76px] py-1.5 pr-4 text-right">Form</th>}
+          <th className="w-11 py-1.5 pr-2 text-right">%</th>
+          {forms && <th className="w-[82px] py-1.5 pr-4 text-right">Form</th>}
           {!forms && <th className="w-4" />}
         </tr>
       </thead>
@@ -49,7 +49,7 @@ export function LeagueTable({
               <td className="py-2.5">{href ? <Link href={href}>{nameCell}</Link> : nameCell}</td>
               <td className="py-2.5 text-right font-extrabold">{s.wins}</td>
               <td className="py-2.5 text-right text-muted">{s.losses}</td>
-              <td className="py-2.5 text-right text-muted">{s.played ? Math.round(s.winRate * 100) : '–'}</td>
+              <td className="py-2.5 pr-2 text-right text-muted">{s.played ? Math.round(s.winRate * 100) : '–'}</td>
               {forms ? (
                 <td className="py-2.5 pr-4 text-right">
                   <FormDots form={forms[s.player] ?? []} />

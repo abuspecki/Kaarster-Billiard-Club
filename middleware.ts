@@ -4,6 +4,8 @@ import { NextResponse, type NextRequest } from 'next/server';
 const PUBLIC_PATHS = ['/login', '/register', '/auth/callback'];
 
 export async function middleware(request: NextRequest) {
+  // Vorschau mit Beispieldaten nur in der Entwicklung, ohne Login.
+  if (process.env.NODE_ENV !== 'production' && request.nextUrl.pathname.startsWith('/dev/')) return NextResponse.next();
   let response = NextResponse.next({ request });
   const sb = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
     cookies: {
