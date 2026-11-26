@@ -3,7 +3,8 @@ import { notFound } from 'next/navigation';
 import { startSession } from '@/app/actions/groups';
 import { RankingTable } from '@/components/RankingTable';
 import { ShareButton } from '@/components/ShareButton';
-import { Button, Card } from '@/components/ui';
+import { ActionButton } from '@/components/ActionButton';
+import { Card } from '@/components/ui';
 import { loadGroup, loadGroupMatches, loadNames } from '@/lib/data';
 import { computeStandings } from '@/lib/stats';
 import { createServerSupabase, requireUser } from '@/lib/supabase/server';
@@ -56,9 +57,9 @@ export default async function GroupPage({ params }: { params: Promise<{ groupId:
         </Link>
       ))}
 
-      <form action={startSession.bind(null, groupId)}>
-        <Button className="w-full py-4 text-lg">▶ Sitzung starten</Button>
-      </form>
+      <ActionButton action={startSession.bind(null, groupId)} className="w-full py-4 text-lg">
+        ▶ Sitzung starten
+      </ActionButton>
 
       <Card>
         <h2 className="mb-2 font-semibold">Rangliste</h2>

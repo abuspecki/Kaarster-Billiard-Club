@@ -22,10 +22,10 @@ export async function joinCode(_: FormState, form: FormData): Promise<FormState>
   redirect(result.kind === 'session' ? `/s/${result.id}` : `/g/${result.id}`);
 }
 
-export async function startSession(groupId: string) {
+export async function startSession(groupId: string): Promise<FormState> {
   const sb = await createServerSupabase();
   const { data, error } = await sb.rpc('start_session', { p_group_id: groupId });
-  if (error) throw new Error(error.message);
+  if (error) return { error: error.message };
   redirect(`/s/${data}`);
 }
 
@@ -39,16 +39,18 @@ export async function renameGroup(groupId: string, _: FormState, form: FormData)
   return { info: 'Gespeichert.' };
 }
 
-export async function removeMember(groupId: string, userId: string) {
+export async function removeMember(groupId: string, userId: string): Promise<FormState> {
   const sb = await createServerSupabase();
   const { error } = await sb.rpc('remove_member', { p_group_id: groupId, p_user_id: userId });
-  if (error) throw new Error(error.message);
-  revalidatePath(`/g/${groupId}/settings`);
+  if (error) return { error: error.message };
+  revalidatePath(`/g/${groupId}`, 'layout');
+  return {};
 }
 
-export async function regenerateInvite(groupId: string) {
+export async function regenerateInvite(groupId: string): Promise<FormState> {
   const sb = await createServerSupabase();
   const { error } = await sb.rpc('regenerate_invite', { p_group_id: groupId });
-  if (error) throw new Error(error.message);
+  if (error) return { error: error.message };
   revalidatePath(`/g/${groupId}`, 'layout');
+  return {};
 }

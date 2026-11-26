@@ -2,7 +2,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { regenerateInvite, removeMember, renameGroup } from '@/app/actions/groups';
 import { SingleFieldForm } from '@/components/FormCard';
-import { Button, Card } from '@/components/ui';
+import { ActionButton } from '@/components/ActionButton';
+import { Card } from '@/components/ui';
 import { loadGroup } from '@/lib/data';
 import { createServerSupabase, requireUser } from '@/lib/supabase/server';
 
@@ -35,9 +36,9 @@ export default async function SettingsPage({ params }: { params: Promise<{ group
           Aktuell: <span className="font-mono font-bold tracking-widest">{group.invite_code}</span>. Ein neuer Code macht alte
           Einladungslinks ungültig.
         </p>
-        <form action={regenerateInvite.bind(null, groupId)}>
-          <Button variant="secondary">Neuen Code erzeugen</Button>
-        </form>
+        <ActionButton action={regenerateInvite.bind(null, groupId)} variant="secondary" confirmText="Alte Einladungslinks werden ungültig. Fortfahren?">
+          Neuen Code erzeugen
+        </ActionButton>
       </Card>
 
       <Card>
@@ -50,11 +51,14 @@ export default async function SettingsPage({ params }: { params: Promise<{ group
                 {m.role === 'admin' && <span className="ml-2 rounded bg-stone-100 px-2 py-0.5 text-xs">Admin</span>}
               </span>
               {m.user_id !== user.id && (
-                <form action={removeMember.bind(null, groupId, m.user_id)}>
-                  <Button variant="danger" className="px-3 py-1.5 text-sm">
-                    Entfernen
-                  </Button>
-                </form>
+                <ActionButton
+                  action={removeMember.bind(null, groupId, m.user_id)}
+                  variant="danger"
+                  className="px-3 py-1.5 text-sm"
+                  confirmText={`${m.profiles?.display_name ?? 'Mitglied'} aus der Gruppe entfernen?`}
+                >
+                  Entfernen
+                </ActionButton>
               )}
             </li>
           ))}

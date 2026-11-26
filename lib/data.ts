@@ -1,6 +1,7 @@
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { toMatchRecords, type MatchRow } from './mapping';
+import { FORMER_MEMBER } from './names';
 import type { MatchRecord, PlayerKey } from './types';
 
 export { toMatchRecords } from './mapping';
@@ -28,7 +29,7 @@ async function loadMatches(sb: SupabaseClient, column: 'group_id' | 'session_id'
 export const loadGroupMatches = (sb: SupabaseClient, groupId: string) => loadMatches(sb, 'group_id', groupId);
 export const loadSessionMatches = (sb: SupabaseClient, sessionId: string) => loadMatches(sb, 'session_id', sessionId);
 
-export const FORMER_MEMBER = 'Ehemaliges Mitglied';
+export { FORMER_MEMBER, displayName as nameOf } from './names';
 
 /** Namen aller Gruppenmitglieder und (optional) aller Teilnehmer einer Sitzung, inkl. Gäste. */
 export async function loadNames(sb: SupabaseClient, groupId: string, sessionId?: string): Promise<Record<PlayerKey, string>> {
@@ -64,4 +65,3 @@ export async function loadGroup(sb: SupabaseClient, groupId: string, userId: str
   return { ...(group as { id: string; name: string; invite_code: string }), isAdmin: me?.role === 'admin' };
 }
 
-export const nameOf = (names: Record<PlayerKey, string>, key: PlayerKey) => names[key] ?? (key.startsWith('g:') ? 'Gast' : FORMER_MEMBER);

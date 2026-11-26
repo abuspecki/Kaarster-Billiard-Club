@@ -1,8 +1,9 @@
 'use server';
 
+import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { createServerSupabase } from '@/lib/supabase/server';
-import { safeNext } from '@/lib/safe-next';
+import { callbackUrl, safeNext } from '@/lib/safe-next';
 
 export type FormState = { error?: string; info?: string };
 
@@ -22,11 +23,13 @@ export async function register(_: FormState, form: FormData): Promise<FormState>
   if (displayName.length < 1 || displayName.length > 40) return { error: 'Name muss 1 bis 40 Zeichen haben.' };
   if (password.length < 8) return { error: 'Passwort muss mindestens 8 Zeichen haben.' };
 
+  const h = await headers();
+  const origin = h.get('origin') ?? `https://${h.get('host')}`;
   const sb = await createServerSupabase();
   const { data, error } = await sb.auth.signUp({
     email: String(form.get('email') ?? '').trim(),
     password,
-    options: { data: { display_name: displayName } },
+    options: { data: { display_name: displayName }, emailRedirectTo: callbackUrl(origin, form.get('next')) },
   });
   if (error) return { error: error.message.includes('registered') ? 'Diese E-Mail ist schon registriert.' : 'Registrierung fehlgeschlagen.' };
   if (!data.session) return { info: 'Fast geschafft! Bestätige deine E-Mail über den Link, den wir dir geschickt haben.' };

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { displayName } from '@/lib/names';
 import type { PlayerKey, Standing } from '@/lib/types';
 
 export function RankingTable({
@@ -25,7 +26,7 @@ export function RankingTable({
       <tbody>
         {standings.map((s, i) => {
           const href = profileHref?.(s.player);
-          const name = names[s.player] ?? '?';
+          const name = displayName(names, s.player);
           return (
             <tr key={s.player} className="border-t border-stone-100">
               <td className="py-2 font-semibold text-stone-500">{i < 3 && s.played > 0 ? ['🥇', '🥈', '🥉'][i] : i + 1}</td>

@@ -22,7 +22,7 @@ Du brauchst zwei kostenlose Konten: **Supabase** (Datenbank + Login) und **Verce
 1. Auf <https://supabase.com> registrieren und **New project** anlegen (Region z. B. *Frankfurt*). Datenbank-Passwort irgendwo notieren.
 2. Links **SQL Editor** → **New query** öffnen, den kompletten Inhalt von [`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql) hineinkopieren und **Run** drücken. Es sollte „Success“ erscheinen.
 3. Links **Authentication → Sign In / Providers → Email**:
-   - *Confirm email* **aus**schalten, wenn sich Freunde ohne Bestätigungsmail sofort anmelden sollen (empfohlen für den Anfang – der Gratis-Mailversand von Supabase ist stark begrenzt).
+   - *Confirm email* kannst du an- oder ausschalten. **Aus** ist für den Anfang bequemer: Freunde sind sofort drin, und der Gratis-Mailversand von Supabase (nur wenige Mails pro Stunde) wird nicht gebraucht. **An** funktioniert auch – der Link in der Mail meldet direkt an und führt zur Einladung zurück.
 4. Links **Project Settings → API**: **Project URL** und den **anon public** Key kopieren.
 
 ### 2. Vercel einrichten
@@ -35,7 +35,9 @@ Du brauchst zwei kostenlose Konten: **Supabase** (Datenbank + Login) und **Verce
 
 ### 3. Supabase die Adresse mitteilen
 
-In Supabase **Authentication → URL Configuration** die **Site URL** auf deine Vercel-Adresse setzen.
+In Supabase **Authentication → URL Configuration**:
+- **Site URL** auf deine Vercel-Adresse setzen, z. B. `https://kaarster-billiard.vercel.app`
+- unter **Redirect URLs** `https://kaarster-billiard.vercel.app/auth/callback` hinzufügen (deine Adresse einsetzen)
 
 Fertig! Adresse öffnen, registrieren, Gruppe anlegen, Einladungslink in die WhatsApp-Gruppe schicken. 📱 Tipp: Im Handy-Browser „Zum Startbildschirm hinzufügen“ – dann fühlt sich die Seite wie eine App an.
 

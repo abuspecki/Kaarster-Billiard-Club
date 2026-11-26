@@ -5,7 +5,7 @@ import { useActionState } from 'react';
 import { login, register, type FormState } from '@/app/actions/auth';
 import { Button, Card, ErrorText, Input } from './ui';
 
-export function AuthForm({ mode, next }: { mode: 'login' | 'register'; next: string }) {
+export function AuthForm({ mode, next, notice }: { mode: 'login' | 'register'; next: string; notice?: string }) {
   const [state, action, pending] = useActionState<FormState, FormData>(mode === 'login' ? login : register, {});
   const other = mode === 'login' ? '/register' : '/login';
   return (
@@ -13,6 +13,7 @@ export function AuthForm({ mode, next }: { mode: 'login' | 'register'; next: str
       <h1 className="mb-1 text-3xl font-bold">🎱 Billiard-Tracker</h1>
       <p className="mb-6 text-stone-600">{mode === 'login' ? 'Willkommen zurück!' : 'Konto anlegen – dauert 20 Sekunden.'}</p>
       <Card>
+        {notice && <p className="mb-3 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{notice}</p>}
         <form action={action} className="space-y-3">
           <input type="hidden" name="next" value={next} />
           {mode === 'register' && (
