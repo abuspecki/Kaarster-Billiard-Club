@@ -146,7 +146,7 @@ begin
 end $$;
 
 create function public.require_uid() returns uuid
-language plpgsql stable as $$
+language plpgsql stable set search_path = public as $$
 begin
   if auth.uid() is null then raise exception 'Nicht angemeldet'; end if;
   return auth.uid();
