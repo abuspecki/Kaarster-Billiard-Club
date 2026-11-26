@@ -4,7 +4,11 @@ import { useState, useTransition } from 'react';
 import { createTournament } from '@/app/actions/tournament';
 import type { SessionPlayer } from '@/lib/session-data';
 import { drawTeams } from '@/lib/teams';
-import { Button, Card, ErrorText } from './ui';
+import { PlayerBadge } from './sport/PlayerBadge';
+import { SectionCard } from './sport/SectionCard';
+import { Button, ErrorText } from './ui';
+
+const keyOf = (p: SessionPlayer) => (p.userId ? `u:${p.userId}` : `g:${p.id}`);
 
 export function TeamDraw({ sessionId, players }: { sessionId: string; players: SessionPlayer[] }) {
   const [selected, setSelected] = useState<string[]>(players.map((p) => p.id));
@@ -39,24 +43,24 @@ export function TeamDraw({ sessionId, players }: { sessionId: string; players: S
   const valid = teams !== null && teams.length >= 2 && teams.every((t) => t.length > 0);
 
   return (
-    <div className="space-y-4">
-      <Card>
-        <h2 className="mb-2 font-semibold">Wer spielt mit?</h2>
+    <div className="space-y-3">
+      <SectionCard title="Wer spielt mit?">
         <div className="flex flex-wrap gap-2">
           {players.map((p) => (
             <button
               key={p.id}
               onClick={() => togglePlayer(p.id)}
-              className={`rounded-full px-4 py-2 font-medium ring-1 ${
-                selected.includes(p.id) ? 'bg-emerald-700 text-white ring-emerald-700' : 'bg-white text-stone-400 ring-stone-300'
+              className={`flex items-center gap-2 rounded-full border-2 py-1 pr-4 pl-1 font-semibold transition ${
+                selected.includes(p.id) ? 'border-accent bg-accent-soft' : 'border-line bg-surface text-muted opacity-60'
               }`}
             >
+              <PlayerBadge player={keyOf(p)} name={p.name} />
               {p.name}
             </button>
           ))}
         </div>
-        <h2 className="mb-2 mt-4 font-semibold">Spieler pro Team</h2>
-        <div className="grid grid-cols-4 rounded-xl bg-stone-100 p-1 text-sm font-semibold">
+        <h3 className="mt-4 mb-2 text-xs font-bold tracking-wide text-muted uppercase">Spieler pro Team</h3>
+        <div className="grid grid-cols-4 rounded-lg bg-surface-2 p-1 text-sm font-bold">
           {[1, 2, 3, 4].map((n) => (
             <button
               key={n}
@@ -64,7 +68,7 @@ export function TeamDraw({ sessionId, players }: { sessionId: string; players: S
                 setSize(n);
                 setTeams(null);
               }}
-              className={`rounded-lg py-2 ${size === n ? 'bg-white shadow' : 'text-stone-500'}`}
+              className={`rounded-md py-2 ${size === n ? 'bg-surface text-fg shadow-sm' : 'text-muted'}`}
             >
               {n === 1 ? 'Jeder für sich' : n}
             </button>
@@ -74,22 +78,25 @@ export function TeamDraw({ sessionId, players }: { sessionId: string; players: S
           🎲 {teams ? 'Neu mischen' : 'Teams auslosen'}
         </Button>
         <ErrorText>{error}</ErrorText>
-      </Card>
+      </SectionCard>
 
       {teams && (
-        <Card>
-          <h2 className="mb-1 font-semibold">Teams</h2>
-          <p className="mb-3 text-xs text-stone-500">Spieler antippen, um ihn ins nächste Team zu schieben.</p>
+        <SectionCard title="Teams">
+          <p className="mb-3 text-xs text-muted">Spieler antippen, um ihn ins nächste Team zu schieben.</p>
           <ol className="space-y-2">
             {teams.map((t, i) => (
-              <li key={i} className="flex flex-wrap items-center gap-2 rounded-xl bg-stone-50 p-2">
-                <span className="w-16 text-sm font-semibold text-stone-500">Team {i + 1}</span>
+              <li key={i} className="flex flex-wrap items-center gap-2 rounded-lg border border-line bg-surface-2 p-2">
+                <span className="font-cond w-16 text-sm font-extrabold tracking-wide text-muted uppercase">Team {i + 1}</span>
                 {t.map((id) => (
-                  <button key={id} onClick={() => moveToNextTeam(id)} className="rounded-full bg-white px-3 py-1 ring-1 ring-stone-300">
+                  <button key={id} onClick={() => moveToNextTeam(id)} className="flex items-center gap-1.5 rounded-full border border-line bg-surface py-0.5 pr-3 pl-0.5 text-sm font-semibold">
+                    {(() => {
+                      const p = players.find((x) => x.id === id);
+                      return p ? <PlayerBadge player={keyOf(p)} name={p.name} size="sm" /> : null;
+                    })()}
                     {nameOf(id)}
                   </button>
                 ))}
-                {t.length === 0 && <span className="text-sm text-red-600">leer</span>}
+                {t.length === 0 && <span className="text-sm font-semibold text-accent-text">leer</span>}
               </li>
             ))}
           </ol>
@@ -105,7 +112,7 @@ export function TeamDraw({ sessionId, players }: { sessionId: string; players: S
           >
             🏆 Turnier starten
           </Button>
-        </Card>
+        </SectionCard>
       )}
     </div>
   );
