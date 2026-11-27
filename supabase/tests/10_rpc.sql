@@ -80,6 +80,13 @@ select id as pa2 from session_players where session_id = :'sid2' and user_id = :
 select t.t_throws(format('select record_match(%L, array[%L]::uuid[], array[%L]::uuid[], ''A'')', :'sid', :'pa', :'pa2'),
   'nicht in dieser Sitzung', 'rejects_player_from_other_session');
 
+-- player pause -------------------------------------------------------------
+select set_player_paused(:'guest', true);
+select t.t_assert((select paused from session_players where id = :'guest'), 'pause guest');
+select set_player_paused(:'guest', false);
+select t.t_assert(not (select paused from session_players where id = :'guest'), 'unpause guest');
+select t.t_throws('select set_player_paused(''00000000-0000-0000-0000-000000000000'', true)', 'nicht gefunden', 'pause unknown player');
+
 -- update / delete ----------------------------------------------------------
 select set_config('request.jwt.claim.sub', :B, false);
 select update_match(:'mid', array[:'pa']::uuid[], array[:'pb']::uuid[], 'B');
@@ -101,6 +108,7 @@ select t.t_assert((select count(*) from profiles) = 1, 'rls_isolation: only own 
 select t.t_throws(format('select record_match(%L, array[%L]::uuid[], array[%L]::uuid[], ''A'')', :'sid', :'pa', :'pb'),
   'Du bist kein', 'outsider cannot record');
 select t.t_throws(format('insert into groups(name, invite_code) values (''x'', ''ABCDEFGH'')'), 'permission denied', 'no direct insert');
+select t.t_throws(format('select set_player_paused(%L, true)', :'pb'), 'Du bist kein', 'outsider cannot pause');
 
 -- tournament_version_conflict ----------------------------------------------
 select set_config('request.jwt.claim.sub', :A, false);
@@ -161,5 +169,6 @@ select end_session(:'sid');
 select t.t_throws(format('select record_match(%L, array[%L]::uuid[], array[%L]::uuid[], ''A'')', :'sid', :'pa', :'pb'),
   'beendet', 'ended_session_rejects_match');
 select t.t_throws(format('select join_by_code(%L)', :'code'), 'beendet', 'cannot join ended session');
+select t.t_throws(format('select set_player_paused(%L, true)', :'pb'), 'beendet', 'cannot pause in ended session');
 
 reset role;
