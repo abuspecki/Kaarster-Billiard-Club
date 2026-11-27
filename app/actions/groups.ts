@@ -49,6 +49,14 @@ export async function updateGroupLocation(groupId: string, _: FormState, form: F
   return { info: 'Gespeichert.' };
 }
 
+export async function setMemberSittingOut(groupId: string, userId: string, value: boolean): Promise<FormState> {
+  const sb = await createServerSupabase();
+  const { error } = await sb.rpc('set_member_sitting_out', { p_group_id: groupId, p_user_id: userId, p_value: value });
+  if (error) return { error: error.message };
+  revalidatePath(`/g/${groupId}`);
+  return {};
+}
+
 export async function removeMember(groupId: string, userId: string): Promise<FormState> {
   const sb = await createServerSupabase();
   const { error } = await sb.rpc('remove_member', { p_group_id: groupId, p_user_id: userId });

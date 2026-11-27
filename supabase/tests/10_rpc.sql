@@ -41,6 +41,14 @@ select join_by_code(lower(:'invite_code')) ->> 'kind' as kind \gset
 select t.t_assert(:'kind' = 'group', 'group_flow: join kind');
 select t.t_assert((select role from group_members where group_id = :'gid' and user_id = :B) = 'member', 'group_flow: B is member');
 
+-- sit out (group level) ------------------------------------------------------
+select set_member_sitting_out(:'gid', :A, true);
+select t.t_assert((select sitting_out from group_members where group_id = :'gid' and user_id = :A), 'member can set sitting out');
+select set_member_sitting_out(:'gid', :A, false);
+select t.t_throws(format('select set_member_sitting_out(%L, %L, true)', :'gid', :C), 'kein Mitglied', 'target must be member');
+select set_config('request.jwt.claim.sub', :A, false);
+select set_member_sitting_out(:'gid', :B, true);
+
 -- session_join_adds_membership --------------------------------------------
 select set_config('request.jwt.claim.sub', :A, false);
 select start_session(:'gid') as sid \gset
@@ -58,6 +66,14 @@ select t.t_assert((select count(*) from session_players where session_id = :'sid
 
 select set_config('request.jwt.claim.sub', :B, false);
 select join_by_code(:'code') is not null as joined \gset
+
+select t.t_assert((select paused from session_players where session_id = :'sid' and user_id = :B), 'sitting-out member joins paused');
+select t.t_assert(not (select paused from session_players where session_id = :'sid' and user_id = :C), 'others join unpaused');
+select set_config('request.jwt.claim.sub', :D, false);
+select t.t_throws(format('select set_member_sitting_out(%L, %L, true)', :'gid', :B), 'Du bist kein', 'outsider cannot set sitting out');
+select set_config('request.jwt.claim.sub', :A, false);
+select set_member_sitting_out(:'gid', :B, false);
+select set_player_paused(id, false) from session_players where session_id = :'sid' and user_id = :B;
 
 -- record_doubles_with_guest -----------------------------------------------
 select set_config('request.jwt.claim.sub', :A, false);

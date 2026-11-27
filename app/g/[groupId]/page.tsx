@@ -7,7 +7,7 @@ import { AppBar } from '@/components/sport/AppBar';
 import { EmptyState } from '@/components/sport/EmptyState';
 import { LeagueTable } from '@/components/sport/LeagueTable';
 import { LiveCard } from '@/components/sport/LiveCard';
-import { PlayerBadge } from '@/components/sport/PlayerBadge';
+import { MemberRow } from '@/components/MemberRow';
 import { ResultStrip } from '@/components/sport/ResultStrip';
 import { SectionCard } from '@/components/sport/SectionCard';
 import { StatTiles } from '@/components/sport/StatTiles';
@@ -106,30 +106,37 @@ export default async function GroupPage({
 
       {tab === 'turniere' && <Tournaments sessions={sessions} />}
 
-      {tab === 'spieler' && (
-        <div className="p-4">
-          <SectionCard title="Spieler" flush>
-            <ul>
-              {Object.keys(names)
-                .sort((a, b) => names[a].localeCompare(names[b], 'de'))
-                .map((k) => {
-                  const s = standings.find((x) => x.player === k);
-                  return (
-                    <li key={k} className="border-t border-line first:border-t-0">
-                      <Link href={profileHref(k)!} className="flex items-center gap-3 px-4 py-3 hover:bg-surface-2">
-                        <PlayerBadge player={k} name={names[k]} />
-                        <span className="min-w-0 flex-1 truncate font-semibold">{names[k]}</span>
-                        <span className="text-sm text-muted">{s ? `${s.wins} S · ${s.losses} N` : 'noch keine Partie'}</span>
-                        <span className="text-muted">›</span>
-                      </Link>
-                    </li>
-                  );
-                })}
-            </ul>
-          </SectionCard>
-        </div>
-      )}
+      {tab === 'spieler' && <Players groupId={groupId} names={names} standings={standings} />}
     </>
+  );
+}
+
+async function Players({ groupId, names, standings }: { groupId: string; names: Record<PlayerKey, string>; standings: Standing[] }) {
+  const sb = await createServerSupabase();
+  const { data } = await sb.from('group_members').select('user_id, sitting_out').eq('group_id', groupId);
+  const out = new Set(((data ?? []) as { user_id: string; sitting_out: boolean }[]).filter((m) => m.sitting_out).map((m) => `u:${m.user_id}`));
+  const keys = Object.keys(names).sort((a, b) => Number(out.has(a)) - Number(out.has(b)) || names[a].localeCompare(names[b], 'de'));
+  return (
+    <div className="p-4">
+      <SectionCard title="Spieler" flush>
+        <ul>
+          {keys.map((k) => {
+            const s = standings.find((x) => x.player === k);
+            return (
+              <MemberRow
+                key={k}
+                groupId={groupId}
+                player={k}
+                name={names[k]}
+                stats={s ? `${s.wins} S · ${s.losses} N` : 'noch keine Partie'}
+                sittingOut={out.has(k)}
+              />
+            );
+          })}
+        </ul>
+      </SectionCard>
+      <p className="mt-2 px-1 text-xs text-muted">Spieler antippen, um ihn aussetzen zu lassen. Wer aussetzt, ist in Sitzungen automatisch auf Pause.</p>
+    </div>
   );
 }
 
