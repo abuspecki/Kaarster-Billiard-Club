@@ -8,6 +8,7 @@ export interface SessionPlayer {
   userId: string | null;
   name: string;
   isGuest: boolean;
+  paused: boolean;
 }
 
 export interface SessionMatch {
@@ -46,7 +47,7 @@ export async function loadSessionView(sb: SupabaseClient, sessionId: string, use
   };
 
   const [{ data: playerRows }, { data: matchRows }, { data: me }] = await Promise.all([
-    sb.from('session_players').select('id, user_id, guest_name, created_at, profiles(display_name)').eq('session_id', sessionId).order('created_at'),
+    sb.from('session_players').select('id, user_id, guest_name, paused, created_at, profiles(display_name)').eq('session_id', sessionId).order('created_at'),
     sb
       .from('matches')
       .select('id, created_at, winner_side, tournament_id, profiles(display_name), match_players(side, session_player_id)')
@@ -56,12 +57,13 @@ export async function loadSessionView(sb: SupabaseClient, sessionId: string, use
   ]);
 
   const players: SessionPlayer[] = ((playerRows ?? []) as unknown as {
-    id: string; user_id: string | null; guest_name: string | null; profiles: { display_name: string } | null;
+    id: string; user_id: string | null; guest_name: string | null; paused: boolean | null; profiles: { display_name: string } | null;
   }[]).map((p) => ({
     id: p.id,
     userId: p.user_id,
     name: p.user_id ? (p.profiles?.display_name ?? FORMER_MEMBER) : (p.guest_name ?? 'Gast'),
     isGuest: !p.user_id,
+    paused: !!p.paused,
   }));
 
   const matches: SessionMatch[] = ((matchRows ?? []) as unknown as {

@@ -31,6 +31,10 @@ export async function addGuest(sessionId: string, name: string) {
   return run(sessionId, 'add_guest', { p_session_id: sessionId, p_name: name });
 }
 
+export async function setPlayerPaused(sessionId: string, playerId: string, paused: boolean) {
+  return run(sessionId, 'set_player_paused', { p_session_player_id: playerId, p_paused: paused });
+}
+
 export async function joinSession(sessionId: string, code: string) {
   return run(sessionId, 'join_by_code', { p_code: code });
 }

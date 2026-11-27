@@ -53,11 +53,11 @@ export default function Preview() {
   const standings = computeStandings(matches);
   const forms = Object.fromEntries(standings.map((s) => [s.player, recentForm(matches, s.player)]));
   const players: SessionPlayer[] = [
-    { id: 'p1', userId: 'max', name: 'Max', isGuest: false },
-    { id: 'p2', userId: 'lea', name: 'Lea', isGuest: false },
-    { id: 'p3', userId: 'tim', name: 'Tim', isGuest: false },
-    { id: 'p4', userId: 'jonas', name: 'Jonas', isGuest: false },
-    { id: 'p5', userId: null, name: 'Tom', isGuest: true },
+    { id: 'p1', userId: 'max', name: 'Max', isGuest: false, paused: false },
+    { id: 'p2', userId: 'lea', name: 'Lea', isGuest: false, paused: false },
+    { id: 'p3', userId: 'tim', name: 'Tim', isGuest: false, paused: false },
+    { id: 'p4', userId: 'jonas', name: 'Jonas', isGuest: false, paused: false },
+    { id: 'p5', userId: null, name: 'Tom', isGuest: true, paused: true },
   ];
   let bracket = generateBracket(5);
   bracket = setWinner(bracket, 'r1-s1', 3);

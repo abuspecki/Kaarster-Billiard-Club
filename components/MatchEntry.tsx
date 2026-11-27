@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { deleteMatch, recordMatch, updateMatch } from '@/app/actions/session';
-import { isComplete, resize, togglePlayer, type Sides } from '@/lib/match-entry';
+import { isComplete, orderForEntry, resize, togglePlayer, type Sides } from '@/lib/match-entry';
 import type { SessionMatch, SessionPlayer } from '@/lib/session-data';
 import { PlayerBadge } from './sport/PlayerBadge';
 import { Button, ErrorText } from './ui';
@@ -89,19 +89,20 @@ export function MatchEntry({
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {players.map((p) => {
+          {orderForEntry(players).map((p) => {
             const side = sides.a.includes(p.id) ? 'A' : sides.b.includes(p.id) ? 'B' : null;
             return (
               <button
                 key={p.id}
                 onClick={() => setSides((s) => togglePlayer(s, p.id, size))}
-                className={`flex max-w-full items-center gap-2 rounded-full border-2 py-1 pr-4 pl-1 font-semibold transition ${
+                className={`flex max-w-full items-center gap-2 rounded-full border-2 py-1 pr-4 pl-1 font-semibold transition ${p.paused && !side ? 'opacity-45' : ''} ${
                   side === 'A' ? 'border-accent bg-accent-soft' : side === 'B' ? 'border-fg/60 bg-surface-2' : 'border-line bg-surface'
                 }`}
               >
                 <PlayerBadge player={keyOf(p)} name={p.name} />
                 <span className="truncate">{p.name}</span>
                 {p.isGuest && <span className="text-xs text-muted">Gast</span>}
+                {p.paused && <span className="text-xs text-muted">⏸ Pause</span>}
               </button>
             );
           })}

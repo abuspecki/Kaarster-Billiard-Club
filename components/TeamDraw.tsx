@@ -11,7 +11,7 @@ import { Button, ErrorText } from './ui';
 const keyOf = (p: SessionPlayer) => (p.userId ? `u:${p.userId}` : `g:${p.id}`);
 
 export function TeamDraw({ sessionId, players }: { sessionId: string; players: SessionPlayer[] }) {
-  const [selected, setSelected] = useState<string[]>(players.map((p) => p.id));
+  const [selected, setSelected] = useState<string[]>(players.filter((p) => !p.paused).map((p) => p.id));
   const [size, setSize] = useState(1);
   const [teams, setTeams] = useState<string[][] | null>(null);
   const [error, setError] = useState<string>();
