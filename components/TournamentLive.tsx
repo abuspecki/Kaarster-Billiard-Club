@@ -11,6 +11,7 @@ import { AppBar, LiveBadge, MutedBadge } from './sport/AppBar';
 import { EmptyState } from './sport/EmptyState';
 import { NowPlaying } from './sport/NowPlaying';
 import { SectionCard } from './sport/SectionCard';
+import { PushToggle } from './PushToggle';
 import { TeamDraw } from './TeamDraw';
 import { Button } from './ui';
 
@@ -44,6 +45,7 @@ export function TournamentLive({ view, tournament }: { view: SessionView; tourna
           <TeamDraw sessionId={view.id} players={view.players} />
         ) : tournament ? (
           <>
+            {tournament.status === 'running' && <PushToggle />}
             {tournament.status === 'running' && queue && (
               <NowPlaying
                 now={pairing(queue.now, tournament.bracket, tournament.teams, view.players)}

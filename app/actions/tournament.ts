@@ -1,6 +1,8 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { after } from 'next/server';
+import { notifyQueue } from '@/lib/push';
 import { BracketError, champion, generateBracket, setWinner, type BracketFormat, type BracketMatch } from '@/lib/bracket';
 import { createServerSupabase } from '@/lib/supabase/server';
 import type { ActionResult } from './session';
@@ -8,13 +10,14 @@ import type { ActionResult } from './session';
 export async function createTournament(sessionId: string, teamSize: number, teams: string[][], format: BracketFormat = 'single'): Promise<ActionResult> {
   if (teams.length < 2 || teams.some((t) => t.length === 0)) return { error: 'Mindestens 2 Teams mit Spielern nötig.' };
   const sb = await createServerSupabase();
-  const { error } = await sb.rpc('create_tournament', {
+  const { data: tournamentId, error } = await sb.rpc('create_tournament', {
     p_session_id: sessionId,
     p_team_size: teamSize,
     p_teams: teams,
     p_bracket: generateBracket(teams.length, format === 'double' ? 'double' : 'single'),
   });
   if (error) return { error: error.message };
+  after(() => notifyQueue(sb, tournamentId as string));
   revalidatePath(`/s/${sessionId}/tournament`);
   return {};
 }
@@ -49,5 +52,6 @@ export async function setTournamentWinner(
   });
   revalidatePath(`/s/${sessionId}/tournament`);
   if (error) return { error: error.message.includes('Stand hat sich') ? 'Stand hat sich geändert – bitte noch einmal prüfen.' : error.message };
+  after(() => notifyQueue(sb, tournamentId));
   return {};
 }

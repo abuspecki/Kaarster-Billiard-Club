@@ -10,6 +10,7 @@ import type { BracketMatch } from '@/lib/bracket';
 import { nowAndNext, pausedTeamIndexes } from '@/lib/queue';
 import { pairing } from '@/lib/tournament-view';
 import { MatchEntry } from './MatchEntry';
+import { PushToggle } from './PushToggle';
 import { NowPlaying } from './sport/NowPlaying';
 import { ShareButton } from './ShareButton';
 import { AppBar, LiveBadge, MutedBadge } from './sport/AppBar';
@@ -113,6 +114,7 @@ export function SessionLive({ view, canEnd, tournament }: { view: SessionView; c
             />
           );
         })()}
+        {active && tournament && view.me.playerId && <PushToggle />}
 
         {canWrite && (
           <Button className="w-full py-5 text-xl" onClick={() => setEntry({ initial: { a: view.me.playerId ? [view.me.playerId] : [], b: [] } })}>
