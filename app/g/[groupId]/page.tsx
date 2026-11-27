@@ -42,6 +42,7 @@ export default async function GroupPage({
   const sb = await createServerSupabase();
   const group = await loadGroup(sb, groupId, user.id);
   if (!group) notFound();
+  await sb.rpc('end_stale_sessions', { p_group_id: groupId }); // vergessene Sitzungen beenden
 
   const [matches, names, { data: sessionData }] = await Promise.all([
     loadGroupMatches(sb, groupId),

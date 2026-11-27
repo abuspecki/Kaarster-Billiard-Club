@@ -7,6 +7,8 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'Billiard-Tracker',
   description: 'Sitzungen, Turniere und Ranglisten für eure Billiard-Runde',
+  applicationName: 'Billiard-Tracker',
+  appleWebApp: { capable: true, title: 'Billiard', statusBarStyle: 'black' },
 };
 
 export const viewport: Viewport = {

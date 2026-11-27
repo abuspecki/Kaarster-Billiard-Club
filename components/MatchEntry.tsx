@@ -22,7 +22,7 @@ export function MatchEntry({
   initial: Sides;
   editing?: SessionMatch;
   onClose: () => void;
-  onSaved?: (message: string) => void;
+  onSaved?: (message: string, undoMatchId?: string) => void;
 }) {
   const [size, setSize] = useState(Math.max(1, editing?.sideA.length ?? 1));
   const [sides, setSides] = useState<Sides>(initial);
@@ -33,11 +33,15 @@ export function MatchEntry({
 
   function save(winner: 'A' | 'B') {
     start(async () => {
-      const result = editing
-        ? await updateMatch(sessionId, editing.id, sides.a, sides.b, winner)
-        : await recordMatch(sessionId, sides.a, sides.b, winner);
-      if (result.error) return setError(result.error);
-      onSaved?.(editing ? 'Geändert ✓' : `Gespeichert ✓  ${label(winner === 'A' ? sides.a : sides.b)} gewinnt`);
+      if (editing) {
+        const result = await updateMatch(sessionId, editing.id, sides.a, sides.b, winner);
+        if (result.error) return setError(result.error);
+        onSaved?.('Geändert ✓');
+      } else {
+        const result = await recordMatch(sessionId, sides.a, sides.b, winner);
+        if (result.error) return setError(result.error);
+        onSaved?.(`✓ ${label(winner === 'A' ? sides.a : sides.b)} gewinnt`, result.id);
+      }
       onClose();
     });
   }

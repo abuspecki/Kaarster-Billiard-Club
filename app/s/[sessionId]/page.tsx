@@ -7,8 +7,12 @@ export default async function SessionPage({ params }: { params: Promise<{ sessio
   const { sessionId } = await params;
   const user = await requireUser();
   const sb = await createServerSupabase();
-  const view = await loadSessionView(sb, sessionId, user.id);
+  let view = await loadSessionView(sb, sessionId, user.id);
   if (!view) notFound();
+  if (view.status === 'active' && view.me.isMember) {
+    const { data: ended } = await sb.rpc('end_stale_sessions', { p_group_id: view.groupId });
+    if (ended) view = (await loadSessionView(sb, sessionId, user.id))!;
+  }
   const canEnd = view.createdBy === user.id || view.me.isAdmin;
   return <SessionLive view={view} canEnd={canEnd} />;
 }

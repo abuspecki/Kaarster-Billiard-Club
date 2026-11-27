@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useState, useTransition } from 'react';
-import { addGuest, endSession, joinSession, setPlayerPaused } from '@/app/actions/session';
+import { addGuest, deleteMatch, endSession, joinSession, setPlayerPaused } from '@/app/actions/session';
 import type { Sides } from '@/lib/match-entry';
 import type { SessionMatch, SessionPlayer, SessionView } from '@/lib/session-data';
 import { useRealtimeRefresh } from '@/lib/useRealtimeRefresh';
@@ -26,7 +26,7 @@ export function SessionLive({ view, canEnd }: { view: SessionView; canEnd: boole
   const [showGuest, setShowGuest] = useState(false);
   const [menuFor, setMenuFor] = useState<string | null>(null);
   const [error, setError] = useState<string>();
-  const [toast, setToast] = useState<{ message: string | null; stamp: number }>({ message: null, stamp: 0 });
+  const [toast, setToast] = useState<{ message: string | null; stamp: number; undoId?: string }>({ message: null, stamp: 0 });
   const [pending, start] = useTransition();
 
   const active = view.status === 'active';
@@ -43,7 +43,13 @@ export function SessionLive({ view, canEnd }: { view: SessionView; canEnd: boole
       <span className={`truncate ${strong ? '' : 'font-normal'}`}>{ids.map((id) => byId(id)?.name ?? '?').join(' + ')}</span>
     </>
   );
-  const notify = (message: string) => setToast((t) => ({ message, stamp: t.stamp + 1 }));
+  const notify = (message: string, undoId?: string) => setToast((t) => ({ message, stamp: t.stamp + 1, undoId }));
+  const undo = (matchId: string) =>
+    act(async () => {
+      const r = await deleteMatch(view.id, matchId);
+      if (!r.error) notify('Rückgängig gemacht');
+      return r;
+    });
 
   const act = (fn: () => Promise<{ error?: string }>) =>
     start(async () => {
@@ -227,7 +233,11 @@ export function SessionLive({ view, canEnd }: { view: SessionView; canEnd: boole
           onSaved={notify}
         />
       )}
-      <Toast message={toast.message} stamp={toast.stamp} />
+      <Toast
+        message={toast.message}
+        stamp={toast.stamp}
+        action={toast.undoId ? { label: 'Rückgängig', onClick: () => undo(toast.undoId!) } : undefined}
+      />
     </>
   );
 }

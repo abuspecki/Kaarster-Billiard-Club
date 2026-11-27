@@ -15,8 +15,17 @@ async function run(sessionId: string, fn: string, args: Record<string, unknown>)
   return {};
 }
 
-export async function recordMatch(sessionId: string, sideA: string[], sideB: string[], winner: Side) {
-  return run(sessionId, 'record_match', { p_session_id: sessionId, p_side_a: sideA, p_side_b: sideB, p_winner: winner });
+export async function recordMatch(
+  sessionId: string,
+  sideA: string[],
+  sideB: string[],
+  winner: Side,
+): Promise<ActionResult & { id?: string }> {
+  const sb = await createServerSupabase();
+  const { data, error } = await sb.rpc('record_match', { p_session_id: sessionId, p_side_a: sideA, p_side_b: sideB, p_winner: winner });
+  if (error) return { error: error.message };
+  revalidatePath(`/s/${sessionId}`);
+  return { id: data as string };
 }
 
 export async function updateMatch(sessionId: string, matchId: string, sideA: string[], sideB: string[], winner: Side) {
