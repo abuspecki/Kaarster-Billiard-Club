@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { SessionLive } from '@/components/SessionLive';
+import { SessionLive, type RunningTournament } from '@/components/SessionLive';
 import { loadSessionView } from '@/lib/session-data';
 import { createServerSupabase, requireUser } from '@/lib/supabase/server';
 
@@ -14,5 +14,11 @@ export default async function SessionPage({ params }: { params: Promise<{ sessio
     if (ended) view = (await loadSessionView(sb, sessionId, user.id))!;
   }
   const canEnd = view.createdBy === user.id || view.me.isAdmin;
-  return <SessionLive view={view} canEnd={canEnd} />;
+  const { data: running } = await sb
+    .from('tournaments')
+    .select('id, teams, bracket')
+    .eq('session_id', sessionId)
+    .eq('status', 'running')
+    .maybeSingle();
+  return <SessionLive view={view} canEnd={canEnd} tournament={(running as RunningTournament | null) ?? null} />;
 }

@@ -13,6 +13,9 @@ import { StatTiles } from '@/components/sport/StatTiles';
 import { Tabs } from '@/components/sport/Tabs';
 import { Button, ErrorText, Input } from '@/components/ui';
 import { generateBracket, setWinner } from '@/lib/bracket';
+import { nowAndNext } from '@/lib/queue';
+import { pairing } from '@/lib/tournament-view';
+import { NowPlaying } from '@/components/sport/NowPlaying';
 import { stripItems } from '@/lib/group-view';
 import type { SessionPlayer } from '@/lib/session-data';
 import { computeStandings, recentForm } from '@/lib/stats';
@@ -153,6 +156,32 @@ export default function Preview() {
             </div>
           </div>
         </SectionCard>
+
+        <h2 className="font-cond pt-4 text-lg font-extrabold uppercase">Doppel-K.o.</h2>
+        {(() => {
+          let d = generateBracket(5, 'double');
+          d = setWinner(d, 'W1-1', 3);
+          d = setWinner(d, 'W2-0', 0);
+          d = setWinner(d, 'W2-1', 1);
+          const teams = [['p1'], ['p2'], ['p3'], ['p4'], ['p5']];
+          const q = nowAndNext(d, new Set([2]));
+          return (
+            <>
+              <NowPlaying now={pairing(q.now, d, teams, players)} next={pairing(q.next, d, teams, players)} pausedCount={q.paused.length} />
+              <BracketView
+                sessionId="x"
+                tournamentId="d"
+                version={0}
+                bracket={d}
+                teams={teams}
+                teamNames={['Max', 'Lea', 'Tim', 'Jonas', 'Tom']}
+                players={players}
+                canWrite
+                highlight={q.now?.id}
+              />
+            </>
+          );
+        })()}
 
         <h2 className="font-cond pt-4 text-lg font-extrabold uppercase">Turnierbaum</h2>
         <BracketView

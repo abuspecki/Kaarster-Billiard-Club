@@ -6,7 +6,11 @@ import { addGuest, deleteMatch, endSession, joinSession, setPlayerPaused } from 
 import type { Sides } from '@/lib/match-entry';
 import type { SessionMatch, SessionPlayer, SessionView } from '@/lib/session-data';
 import { useRealtimeRefresh } from '@/lib/useRealtimeRefresh';
+import type { BracketMatch } from '@/lib/bracket';
+import { nowAndNext, pausedTeamIndexes } from '@/lib/queue';
+import { pairing } from '@/lib/tournament-view';
 import { MatchEntry } from './MatchEntry';
+import { NowPlaying } from './sport/NowPlaying';
 import { ShareButton } from './ShareButton';
 import { AppBar, LiveBadge, MutedBadge } from './sport/AppBar';
 import { EmptyState } from './sport/EmptyState';
@@ -19,7 +23,13 @@ import { Button, ErrorText, Input } from './ui';
 const time = (iso: string) => new Date(iso).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Berlin' });
 const keyOf = (p: SessionPlayer) => (p.userId ? `u:${p.userId}` : `g:${p.id}`);
 
-export function SessionLive({ view, canEnd }: { view: SessionView; canEnd: boolean }) {
+export interface RunningTournament {
+  id: string;
+  teams: string[][];
+  bracket: BracketMatch[];
+}
+
+export function SessionLive({ view, canEnd, tournament }: { view: SessionView; canEnd: boolean; tournament?: RunningTournament | null }) {
   useRealtimeRefresh(view.id);
   const [entry, setEntry] = useState<{ initial: Sides; editing?: SessionMatch } | null>(null);
   const [guestName, setGuestName] = useState('');
@@ -91,6 +101,18 @@ export function SessionLive({ view, canEnd }: { view: SessionView; canEnd: boole
             Mitspielen
           </Button>
         )}
+
+        {active && tournament && (() => {
+          const q = nowAndNext(tournament.bracket, pausedTeamIndexes(tournament.teams, new Set(view.players.filter((p) => p.paused).map((p) => p.id))));
+          return (
+            <NowPlaying
+              now={pairing(q.now, tournament.bracket, tournament.teams, view.players)}
+              next={pairing(q.next, tournament.bracket, tournament.teams, view.players)}
+              pausedCount={q.paused.length}
+              href={`/s/${view.id}/tournament`}
+            />
+          );
+        })()}
 
         {canWrite && (
           <Button className="w-full py-5 text-xl" onClick={() => setEntry({ initial: { a: view.me.playerId ? [view.me.playerId] : [], b: [] } })}>

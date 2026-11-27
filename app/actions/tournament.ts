@@ -1,18 +1,18 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { BracketError, champion, generateBracket, setWinner, type BracketMatch } from '@/lib/bracket';
+import { BracketError, champion, generateBracket, setWinner, type BracketFormat, type BracketMatch } from '@/lib/bracket';
 import { createServerSupabase } from '@/lib/supabase/server';
 import type { ActionResult } from './session';
 
-export async function createTournament(sessionId: string, teamSize: number, teams: string[][]): Promise<ActionResult> {
+export async function createTournament(sessionId: string, teamSize: number, teams: string[][], format: BracketFormat = 'single'): Promise<ActionResult> {
   if (teams.length < 2 || teams.some((t) => t.length === 0)) return { error: 'Mindestens 2 Teams mit Spielern nötig.' };
   const sb = await createServerSupabase();
   const { error } = await sb.rpc('create_tournament', {
     p_session_id: sessionId,
     p_team_size: teamSize,
     p_teams: teams,
-    p_bracket: generateBracket(teams.length),
+    p_bracket: generateBracket(teams.length, format === 'double' ? 'double' : 'single'),
   });
   if (error) return { error: error.message };
   revalidatePath(`/s/${sessionId}/tournament`);

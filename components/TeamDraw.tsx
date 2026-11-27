@@ -13,6 +13,7 @@ const keyOf = (p: SessionPlayer) => (p.userId ? `u:${p.userId}` : `g:${p.id}`);
 export function TeamDraw({ sessionId, players }: { sessionId: string; players: SessionPlayer[] }) {
   const [selected, setSelected] = useState<string[]>(players.filter((p) => !p.paused).map((p) => p.id));
   const [size, setSize] = useState(1);
+  const [format, setFormat] = useState<'single' | 'double'>('double');
   const [teams, setTeams] = useState<string[][] | null>(null);
   const [error, setError] = useState<string>();
   const [pending, start] = useTransition();
@@ -44,6 +45,21 @@ export function TeamDraw({ sessionId, players }: { sessionId: string; players: S
 
   return (
     <div className="space-y-3">
+      <SectionCard title="Turnierart">
+        <div className="grid grid-cols-2 rounded-lg bg-surface-2 p-1 text-sm font-bold">
+          {(['double', 'single'] as const).map((f) => (
+            <button key={f} onClick={() => setFormat(f)} className={`rounded-md py-2 ${format === f ? 'bg-surface text-fg shadow-sm' : 'text-muted'}`}>
+              {f === 'double' ? 'Doppel-K.o.' : 'K.o.'}
+            </button>
+          ))}
+        </div>
+        <p className="mt-2 text-xs text-muted">
+          {format === 'double'
+            ? 'Wer verliert, kommt in die Verliererrunde – erst nach der zweiten Niederlage ist man raus. Finale: ein Spiel.'
+            : 'Wer verliert, ist raus.'}
+        </p>
+      </SectionCard>
+
       <SectionCard title="Wer spielt mit?">
         <div className="flex flex-wrap gap-2">
           {players.map((p) => (
@@ -105,7 +121,7 @@ export function TeamDraw({ sessionId, players }: { sessionId: string; players: S
             disabled={!valid || pending}
             onClick={() =>
               start(async () => {
-                const r = await createTournament(sessionId, size, teams);
+                const r = await createTournament(sessionId, size, teams, format);
                 setError(r.error);
               })
             }
