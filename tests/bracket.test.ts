@@ -86,3 +86,42 @@ describe('champion', () => {
     expect(champion(b)).toBe(1);
   });
 });
+
+describe('normalize (old stored brackets)', () => {
+  it('handles brackets without sources exactly like new ones', async () => {
+    const { normalize } = await import('@/lib/bracket');
+    const legacy = generateBracket(4).map(({ srcA, srcB, section, ...rest }) => {
+      void srcA;
+      void srcB;
+      void section;
+      return rest as BracketMatch;
+    });
+    let b = normalize(legacy);
+    b = setWinner(b, 'r1-s0', 3);
+    expect(find(b, 'r2-s0').teamA).toBe(3);
+    b = setWinner(b, 'r1-s1', 1);
+    b = setWinner(b, 'r2-s0', 1);
+    expect(champion(b)).toBe(1);
+    expect(canChangeResult(b, 'r1-s0')).toBe(false);
+  });
+
+  it('keeps old 5-team byes', async () => {
+    const { normalize } = await import('@/lib/bracket');
+    const legacy = generateBracket(5).map(({ srcA, srcB, ...rest }) => {
+      void srcA;
+      void srcB;
+      return rest as BracketMatch;
+    });
+    const b = normalize(legacy);
+    expect(find(b, 'r1-s0')).toMatchObject({ isBye: true, winner: 0 });
+    expect(find(b, 'r2-s1')).toMatchObject({ teamA: 1, teamB: 2 });
+  });
+});
+
+describe('resolve', () => {
+  it('is idempotent', async () => {
+    const { resolve } = await import('@/lib/bracket');
+    const b = setWinner(generateBracket(6), 'r1-s1', 3);
+    expect(resolve(resolve(b))).toEqual(resolve(b));
+  });
+});
