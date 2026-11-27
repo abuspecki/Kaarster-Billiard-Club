@@ -154,6 +154,20 @@ select t.t_throws(format('select record_match(%L, array[%L]::uuid[], array[%L]::
   'kein Mitglied', 'removed member cannot record');
 select set_config('request.jwt.claim.sub', :A, false);
 
+-- stale sessions ------------------------------------------------------------
+select set_config('request.jwt.claim.sub', :A, false);
+select start_session(:'gid') as stale \gset
+select start_session(:'gid') as fresh \gset
+reset role;
+update sessions set created_at = now() - interval '13 hours' where id = :'stale';
+set role authenticated;
+select end_stale_sessions(:'gid');
+select t.t_assert((select status from sessions where id = :'stale') = 'ended', 'stale session ended');
+select t.t_assert((select ended_at from sessions where id = :'stale') < now() - interval '12 hours', 'ended_at = last activity');
+select t.t_assert((select status from sessions where id = :'fresh') = 'active', 'fresh session stays');
+select set_config('request.jwt.claim.sub', :D, false);
+select t.t_throws(format('select end_stale_sessions(%L)', :'gid'), 'kein Mitglied', 'outsider cannot end stale sessions');
+
 -- internal helpers are not callable --------------------------------------
 select set_config('request.jwt.claim.sub', :B, false);
 select t.t_throws(format('select write_match_players(%L, array[%L]::uuid[], array[%L]::uuid[])', :'mid', :'pb', :'pa'),
