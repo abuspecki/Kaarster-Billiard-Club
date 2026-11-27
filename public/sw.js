@@ -1,4 +1,7 @@
 // Service Worker für Push-Benachrichtigungen („Du bist dran“).
+self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()));
+
 self.addEventListener('push', (event) => {
   let data = {};
   try {
@@ -23,13 +26,12 @@ self.addEventListener('notificationclick', (event) => {
   const url = new URL(event.notification.data?.url || '/', self.location.origin).href;
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((wins) => {
-      for (const w of wins) {
-        if ('focus' in w) {
-          w.navigate(url);
-          return w.focus();
-        }
-      }
-      return self.clients.openWindow(url);
+      const win = wins.find((w) => 'focus' in w);
+      if (!win) return self.clients.openWindow(url);
+      return win
+        .focus()
+        .then((w) => (w && 'navigate' in w ? w.navigate(url) : null))
+        .catch(() => self.clients.openWindow(url));
     }),
   );
 });

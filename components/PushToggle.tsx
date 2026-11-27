@@ -35,7 +35,11 @@ export function PushToggle() {
       if (Notification.permission === 'denied') return setState('denied');
       const reg = await navigator.serviceWorker.register('/sw.js');
       const sub = await reg.pushManager.getSubscription();
-      setState(sub ? 'on' : 'off');
+      if (!sub) return setState('off');
+      // Mit dem Server abgleichen: gehört das Abo dem aktuell angemeldeten Spieler und existiert es noch?
+      const json = sub.toJSON() as { endpoint: string; keys: { p256dh: string; auth: string } };
+      const r = await savePushSubscription({ endpoint: json.endpoint, p256dh: json.keys.p256dh, auth: json.keys.auth });
+      setState(r.error ? 'error' : 'on');
     })().catch(() => setState('error'));
   }, []);
 

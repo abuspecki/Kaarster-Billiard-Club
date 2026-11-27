@@ -131,7 +131,13 @@ select t.t_throws(format('select update_match(%L, array[%L]::uuid[], array[%L]::
   'Turnierbaum', 'tournament matches not editable directly');
 
 -- push -----------------------------------------------------------------------
+reset role;
+insert into app_secrets (name, hash) values ('push', encode(sha256(convert_to('test-secret', 'utf8')), 'hex'))
+  on conflict (name) do update set hash = excluded.hash;
+set role authenticated;
 select set_config('request.jwt.claim.sub', :A, false);
+select count(*) as nosub_claim from claim_push_targets('test-secret', :'tid', 'r1-s0', 'now') \gset
+select t.t_assert(:'nosub_claim' = '0', 'no subscriptions yet');
 select save_push_subscription('https://push.example/a', 'pkA', 'authA');
 select save_push_subscription('https://push.example/a', 'pkA2', 'authA2');
 select t.t_assert((select count(*) from push_subscriptions) = 1, 'own subscription visible, upsert');
@@ -139,19 +145,31 @@ select set_config('request.jwt.claim.sub', :B, false);
 select save_push_subscription('https://push.example/b', 'pkB', 'authB');
 select t.t_assert((select count(*) from push_subscriptions) = 1, 'B sees only own subscription');
 select set_config('request.jwt.claim.sub', :A, false);
-select count(*) as first_claim from claim_push_targets(:'tid', 'r1-s0', 'now') \gset
-select t.t_assert(:'first_claim' = '2', 'claim returns both players subscriptions');
-select count(*) as second_claim from claim_push_targets(:'tid', 'r1-s0', 'now') \gset
+select t.t_throws(format('select * from claim_push_targets(%L, %L, %L, %L)', 'wrong', :'tid', 'r1-s0', 'now'), 'nicht erlaubt', 'claim needs server secret');
+select count(*) as first_claim from claim_push_targets('test-secret', :'tid', 'r1-s0', 'now') \gset
+select t.t_assert(:'first_claim' = '2', 'claim returns both subscriptions (not consumed while nobody had one)');
+select count(*) as second_claim from claim_push_targets('test-secret', :'tid', 'r1-s0', 'now') \gset
 select t.t_assert(:'second_claim' = '0', 'claim twice returns nothing second time');
-select count(*) as next_claim from claim_push_targets(:'tid', 'r1-s0', 'next') \gset
+select count(*) as next_claim from claim_push_targets('test-secret', :'tid', 'r1-s0', 'next') \gset
 select t.t_assert(:'next_claim' = '2', 'other kind is separate');
-select t.t_throws(format('select * from claim_push_targets(%L, %L, %L)', :'tid', 'r1-s0', 'bogus'), 'kind', 'invalid kind');
+reset role;
+update tournaments set bracket = jsonb_set(bracket, '{0,teamB}', '0') where id = :'tid';
+update tournaments set bracket = jsonb_set(bracket, '{0,teamA}', '1') where id = :'tid';
+set role authenticated;
+select count(*) as swapped_claim from claim_push_targets('test-secret', :'tid', 'r1-s0', 'now') \gset
+select t.t_assert(:'swapped_claim' = '2', 'new pairing after correction is notified again');
+select t.t_throws(format('select * from claim_push_targets(%L, %L, %L, %L)', 'test-secret', :'tid', 'r1-s0', 'bogus'), 'kind', 'invalid kind');
 select set_config('request.jwt.claim.sub', :D, false);
-select t.t_throws(format('select * from claim_push_targets(%L, %L, %L)', :'tid', 'x', 'now'), 'Du bist kein', 'outsider cannot claim');
+select t.t_throws(format('select * from claim_push_targets(%L, %L, %L, %L)', 'test-secret', :'tid', 'x', 'now'), 'Du bist kein', 'outsider cannot claim');
 select set_config('request.jwt.claim.sub', :A, false);
 select remove_push_subscription('https://push.example/b');
 select set_config('request.jwt.claim.sub', :B, false);
-select t.t_assert((select count(*) from push_subscriptions) = 0, 'remove_push_subscription by endpoint');
+select t.t_assert((select count(*) from push_subscriptions) = 1, 'cannot remove someone elses subscription');
+select set_config('request.jwt.claim.sub', :A, false);
+select prune_push_subscription('test-secret', :'tid', 'https://push.example/b');
+select set_config('request.jwt.claim.sub', :B, false);
+select t.t_assert((select count(*) from push_subscriptions) = 0, 'server can prune expired subscription of a tournament player');
+select remove_push_subscription('https://push.example/none');
 select t.t_throws('insert into push_subscriptions(user_id, endpoint, p256dh, auth) values (auth.uid(), ''x'', ''y'', ''z'')', 'permission denied', 'no direct insert');
 select set_config('request.jwt.claim.sub', :A, false);
 

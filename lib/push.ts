@@ -10,21 +10,24 @@ function configure(): boolean {
   if (configured !== undefined) return configured;
   const pub = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
   const priv = process.env.VAPID_PRIVATE_KEY;
-  configured = Boolean(pub && priv);
+  configured = Boolean(pub && priv && process.env.PUSH_CLAIM_SECRET);
   if (configured) webpush.setVapidDetails(process.env.VAPID_SUBJECT || 'https://kaarster-billiard-club.vercel.app', pub!, priv!);
   return configured;
 }
 
 type Target = { endpoint: string; p256dh: string; auth: string };
 
-async function send(sb: SupabaseClient, targets: Target[], payload: object) {
+async function send(sb: SupabaseClient, tournamentId: string, targets: Target[], payload: object) {
   await Promise.all(
     targets.map(async (t) => {
       try {
-        await webpush.sendNotification({ endpoint: t.endpoint, keys: { p256dh: t.p256dh, auth: t.auth } }, JSON.stringify(payload), { TTL: 600 });
+        await webpush.sendNotification({ endpoint: t.endpoint, keys: { p256dh: t.p256dh, auth: t.auth } }, JSON.stringify(payload), { TTL: 600, timeout: 5000 });
       } catch (e) {
         const status = (e as { statusCode?: number }).statusCode;
-        if (status === 404 || status === 410) await sb.rpc('remove_push_subscription', { p_endpoint: t.endpoint }); // Abo abgelaufen
+        if (status === 404 || status === 410) {
+          // Abo abgelaufen → aufräumen
+          await sb.rpc('prune_push_subscription', { p_secret: process.env.PUSH_CLAIM_SECRET, p_tournament_id: tournamentId, p_endpoint: t.endpoint });
+        }
       }
     }),
   );
@@ -35,8 +38,8 @@ async function send(sb: SupabaseClient, targets: Target[], payload: object) {
  * Wird nach dem Speichern aufgerufen; Fehler werden geschluckt, damit das Eintragen nie hängt.
  */
 export async function notifyQueue(sb: SupabaseClient, tournamentId: string): Promise<void> {
-  if (!configure()) return;
   try {
+    if (!configure()) return;
     const { data: t } = await sb.from('tournaments').select('id, session_id, status, teams, bracket').eq('id', tournamentId).maybeSingle();
     if (!t || t.status !== 'running') return;
     const { data: rows } = await sb
@@ -57,9 +60,14 @@ export async function notifyQueue(sb: SupabaseClient, tournamentId: string): Pro
       if (!m) continue;
       jobs.push(
         (async () => {
-          const { data: targets } = await sb.rpc('claim_push_targets', { p_tournament_id: t.id, p_bracket_match_id: m.id, p_kind: kind });
+          const { data: targets } = await sb.rpc('claim_push_targets', {
+            p_secret: process.env.PUSH_CLAIM_SECRET,
+            p_tournament_id: t.id,
+            p_bracket_match_id: m.id,
+            p_kind: kind,
+          });
           if (!targets?.length) return;
-          await send(sb, targets as Target[], {
+          await send(sb, t.id, targets as Target[], {
             title: kind === 'now' ? '🎱 Du bist dran!' : '⏳ Du bist gleich dran',
             body: kind === 'now' ? `${label(m)} – ab an den Tisch.` : `${label(m)} kommt als Nächstes.`,
             url,
