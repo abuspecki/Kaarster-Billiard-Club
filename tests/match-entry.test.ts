@@ -31,3 +31,25 @@ describe('resize / isComplete', () => {
     expect(isComplete({ a: ['p1'], b: ['p2'] }, 2)).toBe(false);
   });
 });
+
+describe('orderForEntry', () => {
+  it('puts paused players last and keeps the order otherwise', async () => {
+    const { orderForEntry } = await import('@/lib/match-entry');
+    const ps = [
+      { id: 'a', paused: true },
+      { id: 'b', paused: false },
+      { id: 'c', paused: true },
+      { id: 'd', paused: false },
+    ];
+    expect(orderForEntry(ps).map((p) => p.id)).toEqual(['b', 'd', 'a', 'c']);
+  });
+
+  it('keeps everyone when all are paused', async () => {
+    const { orderForEntry } = await import('@/lib/match-entry');
+    const ps = [
+      { id: 'a', paused: true },
+      { id: 'b', paused: true },
+    ];
+    expect(orderForEntry(ps).map((p) => p.id)).toEqual(['a', 'b']);
+  });
+});

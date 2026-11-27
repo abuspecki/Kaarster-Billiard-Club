@@ -14,3 +14,8 @@ export function togglePlayer(s: Sides, id: string, size: number): Sides {
 export const resize = (s: Sides, size: number): Sides => ({ a: s.a.slice(0, size), b: s.b.slice(0, size) });
 
 export const isComplete = (s: Sides, size: number) => s.a.length === size && s.b.length === size;
+
+/** Aktive Spieler zuerst, pausierte danach – sonst gleiche Reihenfolge. */
+export function orderForEntry<T extends { paused: boolean }>(players: T[]): T[] {
+  return [...players.filter((p) => !p.paused), ...players.filter((p) => p.paused)];
+}
