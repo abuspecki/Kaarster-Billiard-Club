@@ -130,6 +130,31 @@ select t.t_throws(format('select record_tournament_result(%L, 0, %L, ''r1-s0'', 
 select t.t_throws(format('select update_match(%L, array[%L]::uuid[], array[%L]::uuid[], ''A'')', :'tmid', :'pa', :'pb'),
   'Turnierbaum', 'tournament matches not editable directly');
 
+-- push -----------------------------------------------------------------------
+select set_config('request.jwt.claim.sub', :A, false);
+select save_push_subscription('https://push.example/a', 'pkA', 'authA');
+select save_push_subscription('https://push.example/a', 'pkA2', 'authA2');
+select t.t_assert((select count(*) from push_subscriptions) = 1, 'own subscription visible, upsert');
+select set_config('request.jwt.claim.sub', :B, false);
+select save_push_subscription('https://push.example/b', 'pkB', 'authB');
+select t.t_assert((select count(*) from push_subscriptions) = 1, 'B sees only own subscription');
+select set_config('request.jwt.claim.sub', :A, false);
+select count(*) as first_claim from claim_push_targets(:'tid', 'r1-s0', 'now') \gset
+select t.t_assert(:'first_claim' = '2', 'claim returns both players subscriptions');
+select count(*) as second_claim from claim_push_targets(:'tid', 'r1-s0', 'now') \gset
+select t.t_assert(:'second_claim' = '0', 'claim twice returns nothing second time');
+select count(*) as next_claim from claim_push_targets(:'tid', 'r1-s0', 'next') \gset
+select t.t_assert(:'next_claim' = '2', 'other kind is separate');
+select t.t_throws(format('select * from claim_push_targets(%L, %L, %L)', :'tid', 'r1-s0', 'bogus'), 'kind', 'invalid kind');
+select set_config('request.jwt.claim.sub', :D, false);
+select t.t_throws(format('select * from claim_push_targets(%L, %L, %L)', :'tid', 'x', 'now'), 'Du bist kein', 'outsider cannot claim');
+select set_config('request.jwt.claim.sub', :A, false);
+select remove_push_subscription('https://push.example/b');
+select set_config('request.jwt.claim.sub', :B, false);
+select t.t_assert((select count(*) from push_subscriptions) = 0, 'remove_push_subscription by endpoint');
+select t.t_throws('insert into push_subscriptions(user_id, endpoint, p256dh, auth) values (auth.uid(), ''x'', ''y'', ''z'')', 'permission denied', 'no direct insert');
+select set_config('request.jwt.claim.sub', :A, false);
+
 -- admin functions -----------------------------------------------------------
 select set_config('request.jwt.claim.sub', :B, false);
 select t.t_throws(format('select regenerate_invite(%L)', :'gid'), 'Admin', 'regenerate_invite admin only');
